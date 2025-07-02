@@ -22,6 +22,12 @@ Before starting the project, ensure you have the following installed:
 
 ---
 
+## Required Xcode version
+
+- Version 15.0 or later
+
+---
+
 ## Installation
 
 ### 1. Clone the Repository
@@ -52,6 +58,30 @@ open Arabah.xcworkspace
 3. Click `Run` or press `Cmd + R` to build and launch the app.
 
 ---
+
+## Pod installation command
+### 1. Clone the Repository
+```bash
+git clone https://gitlab.com/ios-cqlsys/arabah.git
+```
+
+### 2. Move into the Project Directory
+```bash
+cd arabah
+```
+
+### 3. Install Dependencies (CocoaPods)
+```bash
+pod install
+```
+### 4. Open the Project
+```bash
+open Arabah.xcworkspace
+
+```
+---
+
+
 
 ## Contribution Guidelines
 

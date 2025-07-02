@@ -35,7 +35,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "EC718F2E2CC2342A0077B00E"
+               BlueprintIdentifier = "EB99FFBC2DF0202B002F5280"
                BuildableName = "ARABAHTests.xctest"
                BlueprintName = "ARABAHTests"
                ReferencedContainer = "container:ARABAH.xcodeproj">
@@ -46,7 +46,7 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "EC718F382CC2342A0077B00E"
+               BlueprintIdentifier = "EB99FFA02DF01F07002F5280"
                BuildableName = "ARABAHUITests.xctest"
                BlueprintName = "ARABAHUITests"
                ReferencedContainer = "container:ARABAH.xcodeproj">

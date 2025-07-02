@@ -1,0 +1,180 @@
+//
+//  SearchCatViewModel.swift
+//  ARABAH
+//
+//  Created by cqlm2 on 02/06/25.
+//
+
+import UIKit
+import Combine
+
+/// ViewModel responsible for handling the search feature, including recent searches,
+/// search results, and history deletion, in the ARABAH app.
+final class SearchCatViewModel {
+    
+    /// Represents various UI and data states for search-related operations.
+    enum State {
+        case idle
+        case loading
+        case searchCreateAPISuccess
+        case searchCategoryAPISuccess
+        case recentSearchAPISuccess
+        case historyDeleteAPISuccess
+        case searchCreateAPIFailure(NetworkError)
+        case searchCategoryAPIFailure(NetworkError)
+        case recentSearchAPIFailure(NetworkError)
+        case historyDeleteAPIFailure(NetworkError)
+    }
+    
+    // MARK: - Published Properties
+    
+    /// Holds the current state of the view model.
+    @Published private(set) var state: State = .idle
+    
+    /// List of search results from the create API.
+    @Published private(set) var createModalBody: [CreateModalBody]? = []
+    
+    /// List of categories fetched from the search API.
+    @Published private(set) var category: [Categorys]? = []
+    
+    /// List of products fetched from the search API.
+    @Published private(set) var product: [Producted]? = []
+    
+    /// List of recent searches.
+    @Published private(set) var recentModel: [RecentSearchModalBody]? = []
+    
+    // MARK: - Private Properties
+    
+    private var searchQuery = ""
+    private var latitude = ""
+    private var longitude = ""
+    private var deleteHistoryID: String?
+    private var cancellables = Set<AnyCancellable>()
+    private let networkService: HomeServicesProtocol
+    
+    // MARK: - Initialization
+    
+    /// Initializes the ViewModel with an optional custom network service.
+    init(networkService: HomeServicesProtocol = HomeServices()) {
+        self.networkService = networkService
+    }
+    
+    // MARK: - Public Methods
+    
+    /// Updates the current search query.
+    func updateSearchQuery(_ text: String) {
+        searchQuery = text
+    }
+    
+    /// Updates the current location with latitude and longitude.
+    func updateLocation(lat: String, long: String) {
+        latitude = lat
+        longitude = long
+    }
+    
+    /// Initiates the search by calling the create search API.
+    func performSearch() {
+        guard !searchQuery.isEmpty else {
+            clearCategory()
+            return
+        }
+        state = .loading
+        let name = searchQuery
+        networkService.performSearch(name: name)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] completion in
+                if case .failure(let error) = completion {
+                    self?.state = .searchCreateAPIFailure(error)
+                }
+            } receiveValue: { [weak self] (response: CreateModal) in
+                guard let contentBody = response.body else {
+                    self?.state = .searchCreateAPIFailure(.invalidResponse)
+                    return
+                }
+                self?.state = .searchCreateAPISuccess
+                self?.createModalBody = contentBody
+                self?.fetchSearchResults()
+            }
+            .store(in: &cancellables)
+    }
+
+    /// Fetches the search results (products and categories) based on the current query and location.
+    func fetchSearchResults() {
+        state = .loading
+        
+        networkService.fetchSearchResults(searchQuery: searchQuery, longitude: longitude, latitude: latitude)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] completion in
+                if case .failure(let error) = completion {
+                    self?.state = .searchCategoryAPIFailure(error)
+                }
+            } receiveValue: { [weak self] (response: CategorySearchModal) in
+                guard let contentBody = response.body else {
+                    self?.state = .searchCategoryAPIFailure(.invalidResponse)
+                    return
+                }
+                self?.product = contentBody.products ?? []
+                self?.category = contentBody.category ?? []
+                self?.state = .searchCategoryAPISuccess
+            }
+            .store(in: &cancellables)
+    }
+    
+    /// Calls the recent search API to get the list of recent search items.
+    func recentSearchAPI() {
+        state = .loading
+        networkService.recentSearchAPI()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] completion in
+                if case .failure(let error) = completion {
+                    self?.state = .recentSearchAPIFailure(error)
+                }
+            } receiveValue: { [weak self] (response: RecentSearchModal) in
+                guard let contentBody = response.body else {
+                    self?.state = .recentSearchAPIFailure(.invalidResponse)
+                    return
+                }
+                self?.recentModel = contentBody
+                self?.state = .recentSearchAPISuccess
+            }
+            .store(in: &cancellables)
+    }
+    
+    /// Deletes a specific recent search history entry using its ID.
+    func historyDeleteAPI(with id: String) {
+        state = .loading
+        deleteHistoryID = id
+        networkService.historyDeleteAPI(with: id)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] completion in
+                if case .failure(let error) = completion {
+                    self?.state = .historyDeleteAPIFailure(error)
+                }
+            } receiveValue: { [weak self] (response: SearchHistoryDeleteModal) in
+                self?.state = .historyDeleteAPISuccess
+            }
+            .store(in: &cancellables)
+    }
+    
+    /// Retries the delete API if it previously failed and a delete ID is available.
+    func retryDeleteHistory() {
+        guard let id = self.deleteHistoryID else { return }
+        self.historyDeleteAPI(with: id)
+    }
+    
+    /// Clears the current category list. Useful when the search query is empty.
+    func clearCategory() {
+        category?.removeAll()
+    }
+    
+    /// Formats the lowest product price for display with currency.
+    /// - Parameter product: The product data from which to extract and format price.
+    /// - Returns: Formatted price string with currency symbol.
+    func formattedPrice(for product: Producted) -> String {
+        let data = product.product ?? []
+        let newproduct = data.sorted { ($0.price ?? 0) < ($1.price ?? 0) }
+        let lowestPrice = newproduct.first?.price ?? 0
+        let val = (lowestPrice == 0) ? "0" : (lowestPrice.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", lowestPrice) : String(format: "%.2f", lowestPrice))
+        return "₰" + val
+    }
+}
