@@ -29,6 +29,13 @@ class NotificaitonListTVC: UITableViewCell {
     @IBOutlet var imgView: UIImageView!
     
     
+    override  func awakeFromNib() {
+        lblName.isSkeletonable = true
+        lblDescription.isSkeletonable = true
+        lblTime.isSkeletonable = true
+        imgView.isSkeletonable = true
+    }
+    
     override func prepareForReuse() {
         super.prepareForReuse()
 
@@ -37,12 +44,5 @@ class NotificaitonListTVC: UITableViewCell {
         lblDescription.text = nil
         lblTime.text = nil
         imgView.image = UIImage(named: "Placeholder")
-
-        // Hide skeletons if still active
-        lblName.hideSkeleton()
-        lblDescription.hideSkeleton()
-        lblTime.hideSkeleton()
-        imgView.hideSkeleton()
-       
     }
 }

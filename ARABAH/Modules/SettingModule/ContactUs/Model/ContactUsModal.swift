@@ -9,7 +9,7 @@ import Foundation
 
 
 // MARK: - ContactUsModal
-struct ContactUsModal: Codable {
+struct ContactUsModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -17,7 +17,7 @@ struct ContactUsModal: Codable {
 }
 
 // MARK: - ContactUsModalBody
-struct ContactUsModalBody: Codable {
+struct ContactUsModalBody: Codable, Equatable {
     let userID, name, email, phone: String?
     let message, countryCode: String?
     let deleted: Bool?

@@ -30,15 +30,40 @@ final class FavViewModelTests: XCTestCase {
         super.tearDown()
     }
 
-    func testLikeDislikeSuccessAndFetchList() {
+    func testGetProductfavListSuccessWithNonEmptyData() {
         // Arrange
-        let likeModal = LikeModal(success: true, code: 200, message: "Liked",body: nil)
-        let response = LikeProductModal(
-            success: true,
-            code: 200,
-            message: "Fetched",
-            body: nil
-        )
+        
+        let response = LikeProductModal(success: true, code: 200, message: "Fetched", body: [])
+        
+        mockService.getProductfavListPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+        
+        let expectation = expectation(description: "Fetch Fav List with data")
+        
+        viewModel.$likeListState
+            .dropFirst()
+            .sink { state in
+                if case .success(let modal) = state, modal.message == "Fetched" {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Act
+        viewModel.getProductfavList()
+        
+        // Assert
+        wait(for: [expectation], timeout: 1)
+        XCTAssertEqual(viewModel.likedBody?.count, 1)
+        XCTAssertEqual(viewModel.likedBody?.first?.productID?.name, "Sample Product")
+        XCTAssertFalse(viewModel.showNoDataMessage)
+    }
+
+    func testLikeDislikeStateTransitions_loadingToSuccess() {
+        // Arrange
+        let likeModal = LikeModal(success: true, code: 200, message: "Liked", body: nil)
+        let response = LikeProductModal(success: true, code: 200, message: "Fetched", body: [])
 
         mockService.likeDislikeAPIPublisher = Just(likeModal)
             .setFailureType(to: NetworkError.self)
@@ -48,21 +73,16 @@ final class FavViewModelTests: XCTestCase {
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
 
-        let expectation1 = expectation(description: "LikeDislike Success")
-        let expectation2 = expectation(description: "Fav List Success")
+        let expectation = expectation(description: "States: loading → success")
+        expectation.expectedFulfillmentCount = 2
 
-        var receivedStates: [FavViewModel.State] = []
+        var states: [AppState<LikeModal>] = []
 
-        viewModel.$state
+        viewModel.$likeDislikeState
             .dropFirst()
             .sink { state in
-                receivedStates.append(state)
-                if state == .likeDisLikeSuccess {
-                    expectation1.fulfill()
-                }
-                if state == .likedListSuccess {
-                    expectation2.fulfill()
-                }
+                states.append(state)
+                expectation.fulfill()
             }
             .store(in: &cancellables)
 
@@ -70,51 +90,25 @@ final class FavViewModelTests: XCTestCase {
         viewModel.likeDislikeAPI(productID: "123")
 
         // Assert
-        wait(for: [expectation1, expectation2], timeout: 2)
-        XCTAssertEqual(receivedStates.first, .loading)
-        XCTAssertEqual(viewModel.likedBody?.count, 1)
-        XCTAssertEqual(viewModel.likedBody?.first?.productID?.name, "Test Product")
-        XCTAssertFalse(viewModel.showNoDataMessage)
+        wait(for: [expectation], timeout: 1)
+        XCTAssertEqual(states[0], .loading)
+        XCTAssertEqual(states[1], .success(likeModal))
     }
-
-    func testLikeDislikeFailure() {
+    
+    func testGetProductfavList_nilBody_shouldSetFailureAndClearData() {
         // Arrange
-        mockService.likeDislikeAPIPublisher = Fail(error: NetworkError.networkError("Failed"))
-            .eraseToAnyPublisher()
+        let response = LikeProductModal(success: true, code: 200, message: "Nil Body", body: nil)
 
-        let expectation = expectation(description: "LikeDislike Failure")
-
-        viewModel.$state
-            .dropFirst()
-            .sink { state in
-                if case .likeDisLikeFailure(let error) = state {
-                    XCTAssertEqual(error, .networkError("Failed"))
-                    expectation.fulfill()
-                }
-            }
-            .store(in: &cancellables)
-
-        // Act
-        viewModel.likeDislikeAPI(productID: "123")
-
-        // Assert
-        wait(for: [expectation], timeout: 2)
-    }
-
-    func testGetProductfavListSuccessWithEmptyData() {
-        // Arrange
-        let emptyResponse = LikeProductModal(success: true, code: 200, message: "Empty", body: [])
-
-        mockService.getProductfavListPublisher = Just(emptyResponse)
+        mockService.getProductfavListPublisher = Just(response)
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
 
-        let expectation = expectation(description: "Fetch Fav List Empty")
+        let expectation = expectation(description: "Should hit failure on nil body")
 
-        viewModel.$state
+        viewModel.$likeListState
             .dropFirst()
             .sink { state in
-                if state == .likedListSuccess {
+                if case .failure(let error) = state, error == .invalidResponse {
                     expectation.fulfill()
                 }
             }
@@ -124,23 +118,26 @@ final class FavViewModelTests: XCTestCase {
         viewModel.getProductfavList()
 
         // Assert
-        wait(for: [expectation], timeout: 2)
+        wait(for: [expectation], timeout: 1)
         XCTAssertTrue(viewModel.likedBody?.isEmpty ?? false)
         XCTAssertTrue(viewModel.showNoDataMessage)
     }
 
-    func testGetProductfavListFailure() {
+    func testLikeListFailure_shouldClearBodyAndShowNoData() {
         // Arrange
-        mockService.getProductfavListPublisher = Fail(error: NetworkError.invalidResponse)
+        
+        viewModel.showNoDataMessage = false
+
+        mockService.getProductfavListPublisher = Fail(error: .networkError("Offline"))
             .eraseToAnyPublisher()
 
-        let expectation = expectation(description: "Fetch Fav List Failure")
+        let expectation = expectation(description: "Fail should reset data and show no data message")
 
-        viewModel.$state
+        viewModel.$likeListState
             .dropFirst()
             .sink { state in
-                if case .likedListFailure(let error) = state {
-                    XCTAssertEqual(error, .invalidResponse)
+                if case .failure(let error) = state {
+                    XCTAssertEqual(error, .networkError("Offline"))
                     expectation.fulfill()
                 }
             }
@@ -150,9 +147,36 @@ final class FavViewModelTests: XCTestCase {
         viewModel.getProductfavList()
 
         // Assert
-        wait(for: [expectation], timeout: 2)
+        wait(for: [expectation], timeout: 1)
         XCTAssertTrue(viewModel.likedBody?.isEmpty ?? false)
         XCTAssertTrue(viewModel.showNoDataMessage)
     }
+
+    
+    func testLikeDislikeFailure_shouldEmitFailureState() {
+        // Arrange
+        mockService.likeDislikeAPIPublisher = Fail(error: NetworkError.serverError(message: "Server down"))
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "LikeDislike emits failure")
+
+        viewModel.$likeDislikeState
+            .dropFirst()
+            .sink { state in
+                if case .failure(let error) = state {
+                    XCTAssertEqual(error, .serverError(message: "Server down"))
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        // Act
+        viewModel.likeDislikeAPI(productID: "999")
+
+        // Assert
+        wait(for: [expectation], timeout: 1)
+    }
+
+
 }
 

@@ -37,10 +37,10 @@ final class ShoppingListViewModelTests: XCTestCase {
 
         let expectation = expectation(description: "Delete API call succeeds")
 
-        viewModel.$state
+        viewModel.$listDeleteState
             .dropFirst()
             .sink { state in
-                if case .listDeleteSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -57,10 +57,10 @@ final class ShoppingListViewModelTests: XCTestCase {
 
         let expectation = expectation(description: "Delete API call fails")
 
-        viewModel.$state
+        viewModel.$listDeleteState
             .dropFirst()
             .sink { state in
-                if case .listDeleteFailure(let error) = state {
+                if case .failure(let error) = state {
                     XCTAssertEqual(error, .serverError(message: "Delete Failed"))
                     expectation.fulfill()
                 }
@@ -80,10 +80,10 @@ final class ShoppingListViewModelTests: XCTestCase {
 
         let expectation = expectation(description: "Retry Delete API call succeeds")
 
-        viewModel.$state
+        viewModel.$listDeleteState
             .dropFirst(2)
             .sink { state in
-                if case .listDeleteSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -103,10 +103,10 @@ final class ShoppingListViewModelTests: XCTestCase {
 
         let expectation = expectation(description: "Clear All API call succeeds")
 
-        viewModel.$state
+        viewModel.$listClearState
             .dropFirst()
             .sink { state in
-                if case .listClearSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -123,10 +123,10 @@ final class ShoppingListViewModelTests: XCTestCase {
 
         let expectation = expectation(description: "Clear All API call fails")
 
-        viewModel.$state
+        viewModel.$listClearState
             .dropFirst()
             .sink { state in
-                if case .listClearFailure(let error) = state {
+                if case .failure(let error) = state {
                     XCTAssertEqual(error, .serverError(message: "Clear Failed"))
                     expectation.fulfill()
                 }
@@ -146,10 +146,10 @@ final class ShoppingListViewModelTests: XCTestCase {
 
         let expectation = expectation(description: "Retry Clear All API call succeeds")
 
-        viewModel.$state
+        viewModel.$listClearState
             .dropFirst(2)
             .sink { state in
-                if case .listClearSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -160,4 +160,109 @@ final class ShoppingListViewModelTests: XCTestCase {
 
         wait(for: [expectation], timeout: 1.0)
     }
+    
+    func testShoppingListAPISuccessWithCleaning() {
+        
+        let response = GetShoppingListModal(success: true, code: 200, message: "Fetched", body: nil)
+
+        mockService.shoppingListAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "ShoppingList API success and cleaning")
+        
+        viewModel.$getListState
+            .dropFirst()
+            .sink { state in
+                if case .success(let value) = state {
+                    XCTAssertEqual(value.shoppingList?.count, 1)
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        viewModel.shoppingListAPI()
+        
+        wait(for: [expectation], timeout: 1.0)
+        XCTAssertEqual(viewModel.products.count, 1)
+        XCTAssertEqual(viewModel.totalPrice, [10.0])
+    }
+
+    func testShoppingListAPIFailure() {
+        mockService.shoppingListAPIPublisher = Fail(error: .invalidEncoding)
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "ShoppingList API failure")
+
+        viewModel.$getListState
+            .dropFirst()
+            .sink { state in
+                if case .failure(let error) = state {
+                    XCTAssertEqual(error, .invalidEncoding)
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        viewModel.shoppingListAPI()
+        wait(for: [expectation], timeout: 1.0)
+    }
+    
+    func testRetryShoppingListAPICallsAPI() {
+        let response = GetShoppingListModal(success: true, code: 200, message: "Fetched", body: nil)
+        mockService.shoppingListAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "Retry ShoppingList API success")
+
+        viewModel.$getListState
+            .dropFirst(2) // .loading and then .success
+            .sink { state in
+                if case .success = state {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        viewModel.shoppingListAPI()
+        viewModel.retryShoppingListAPI()
+
+        wait(for: [expectation], timeout: 1.0)
+    }
+    
+    func testDeleteProductInvalidIndexReturnsNil() {
+        viewModel.shoppingList = []
+        let id = viewModel.deleteProduct(at: 5)
+        XCTAssertNil(id)
+    }
+    
+    func testListDeleteStateTransitions() {
+        let deleteModal = shoppinglistDeleteModal(success: true, code: 200, message: "Deleted", body: nil)
+        mockService.shoppingListDeleteAPIPublisher = Just(deleteModal)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        var states: [AppState<shoppinglistDeleteModal>] = []
+        let expectation = expectation(description: "Delete state transitions")
+        expectation.expectedFulfillmentCount = 2 // loading → success
+
+        viewModel.$listDeleteState
+            .dropFirst()
+            .sink { state in
+                states.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.shoppingListDeleteAPI(id: "test")
+
+        wait(for: [expectation], timeout: 1.0)
+        XCTAssertEqual(states.first, .loading)
+        XCTAssertTrue(states.contains { if case .success = $0 { return true } else { return false } })
+    }
+
+
+
+
 }

@@ -16,12 +16,11 @@ final class EditProfileViewModelTests: XCTestCase {
     
     func testCompleteProfileSuccess() {
         let mockService = MockAuthService()
-        let loginModalBody = LoginModalBody(id: "1", role: 1, name: "test", email: "test@gmail.com", password: "", phone: "9856523355", phoneNnumberWithCode: "+919856523355", image: "", countryCode: "+91", status: 0, authToken: "testAuthToken", deviceToken: "testdeviceToken", deviceType: "1", isNotification: 1, socialtype: "1", otp: 0, otpVerify: 1, isProfileComplete: 1, forgotPasswordToken: "", isDeleted: false, createdAt: "", updatedAt: "", v: 1, loginTime: 0, token: "testToken")
         let expectedResponse = LoginModal(
             success: true,
             code: 200,
             message: "Success",
-            body: loginModalBody
+            body: nil
         )
         
         mockService.completeProfilePublisher = Just(expectedResponse)
@@ -99,7 +98,7 @@ final class EditProfileViewModelTests: XCTestCase {
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if case .validationFailure(let error) = state {
+                if case .validationError(let error) = state {
                     XCTAssertEqual(error.localizedDescription, NetworkError.validationError(RegexMessages.emptyName).localizedDescription)
                     expectation.fulfill()
                 }
@@ -119,7 +118,7 @@ final class EditProfileViewModelTests: XCTestCase {
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if case .validationFailure(let error) = state {
+                if case .validationError(let error) = state {
                     XCTAssertEqual(error.localizedDescription, NetworkError.validationError(RegexMessages.emptyEmail).localizedDescription)
                     expectation.fulfill()
                 }
@@ -139,7 +138,7 @@ final class EditProfileViewModelTests: XCTestCase {
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if case .validationFailure(let error) = state {
+                if case .validationError(let error) = state {
                     XCTAssertEqual(error.localizedDescription, NetworkError.validationError(RegexMessages.invalidEmail).localizedDescription)
                     expectation.fulfill()
                 }
@@ -217,4 +216,116 @@ final class EditProfileViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.recentInputs?.needImageUpdate, true)
         XCTAssertNotNil(viewModel.recentInputs?.image)
     }
+    
+    func testStateTransitionsOnSuccess() {
+        let mockService = MockAuthService()
+        
+        let expectedResponse = LoginModal(
+            success: true,
+            code: 200,
+            message: "Updated",
+            body: nil
+        )
+        
+        mockService.completeProfilePublisher = Just(expectedResponse)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+        
+        let viewModel = EditProfileViewModel(authServices: mockService)
+        var stateChanges: [AppState<LoginModal>] = []
+        let expectation = XCTestExpectation(description: "Expect idle → loading → success")
+        expectation.expectedFulfillmentCount = 3
+
+        viewModel.$state
+            .sink { state in
+                stateChanges.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.completeProfleAPI(
+            name: "Test",
+            email: "test@example.com",
+            needImageUpdate: true,
+            image: UIImage(systemName: "person")!
+        )
+        
+        wait(for: [expectation], timeout: 1.0)
+
+        XCTAssertEqual(stateChanges[0], .idle)
+        XCTAssertEqual(stateChanges[1], .loading)
+        XCTAssertEqual(stateChanges[2], .success(expectedResponse))
+    }
+
+    func testStateTransitionsOnFailure() {
+        let mockService = MockAuthService()
+        let expectedError = NetworkError.serverError(message: "Something went wrong")
+
+        mockService.completeProfilePublisher = Fail(error: expectedError)
+            .eraseToAnyPublisher()
+
+        let viewModel = EditProfileViewModel(authServices: mockService)
+        var stateChanges: [AppState<LoginModal>] = []
+        let expectation = XCTestExpectation(description: "Expect idle → loading → failure")
+        expectation.expectedFulfillmentCount = 3
+
+        viewModel.$state
+            .sink { state in
+                stateChanges.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.completeProfleAPI(
+            name: "Test",
+            email: "test@example.com",
+            needImageUpdate: true,
+            image: UIImage(systemName: "person")!
+        )
+
+        wait(for: [expectation], timeout: 1.0)
+
+        XCTAssertEqual(stateChanges[0], .idle)
+        XCTAssertEqual(stateChanges[1], .loading)
+        if case .failure(let err) = stateChanges[2] {
+            XCTAssertEqual(err.localizedDescription, expectedError.localizedDescription)
+        } else {
+            XCTFail("Expected .failure state")
+        }
+    }
+
+    func testStateRemainsIdleOnInvalidInput() {
+        let viewModel = EditProfileViewModel()
+        var states: [AppState<LoginModal>] = []
+        let expectation = XCTestExpectation(description: "Validation blocks API call")
+        expectation.expectedFulfillmentCount = 2
+
+        viewModel.$state
+            .sink { state in
+                states.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.completeProfleAPI(
+            name: "", // invalid
+            email: "invalid",
+            needImageUpdate: false,
+            image: UIImage()
+        )
+
+        wait(for: [expectation], timeout: 1.0)
+
+        XCTAssertEqual(states.first, .idle)
+        XCTAssert(states.contains { state in
+            if case .validationError = state {
+                return true
+            }
+            return false
+        })
+    }
+
+    
+    
+    
 }

@@ -57,7 +57,7 @@ class FilterVC: UIViewController {
     
     // MARK: - STATE HANDLING
     
-    private func handleStateChange(_ state: FilterViewModel.State) {
+    private func handleStateChange(_ state: AppState<FilterGetDataModal>) {
         switch state {
         case .idle:
             break // No action needed
@@ -73,6 +73,8 @@ class FilterVC: UIViewController {
             hideLoadingIndicator()
             setNoDataMsg(count: 0) // Show empty state
             showErrorAlert(error: error) // Display error
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
     
@@ -113,21 +115,6 @@ class FilterVC: UIViewController {
         }
     }
     
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
-        }
-    }
     
     // MARK: - EMPTY STATE
     

@@ -10,21 +10,11 @@ import Combine
 
 /// ViewModel responsible for managing FAQ data and coordinating API calls
 final class FAQViewModel {
-    
-    // MARK: - Output
-    
-    /// Represents the current state of the ViewModel (used for UI feedback)
-    enum State {
-        case idle              // No activity
-        case loading           // Loading data
-        case success           // Data fetched successfully
-        case failure(NetworkError)  // API error occurred
-    }
-    
+
     // MARK: - Properties
     
     /// Published state for UI to observe and react to
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<FaqModal> = .idle
     
     /// List of FAQs received from API
     @Published private(set) var faqList: [FaqModalBody]? = []
@@ -65,7 +55,7 @@ final class FAQViewModel {
                     return
                 }
                 self?.faqList = contentBody
-                self?.state = .success
+                self?.state = .success(response)
             }
             .store(in: &cancellables)
     }

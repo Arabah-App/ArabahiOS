@@ -33,8 +33,6 @@ final class LoginVC: UIViewController {
         setupCountryPicker()
         bindViewModel()
         setupAccessibility()
-       
-    
     }
     
     // MARK: - UI Configuration
@@ -76,10 +74,11 @@ final class LoginVC: UIViewController {
                 self?.handleStateChange(state)
             }
             .store(in: &cancellables)
+        
     }
     
     // React to ViewModel state changes
-    private func handleStateChange(_ state: LoginViewModel.State) {
+    private func handleStateChange(_ state: AppState<LoginModal>) {
         switch state {
         case .idle:
             break
@@ -92,7 +91,7 @@ final class LoginVC: UIViewController {
         case .failure(let error):
             showErrorAlert(error: error)
             hideLoadingIndicator()
-        case .validatefailure(let error):
+        case .validationError(let error):
             hideLoadingIndicator()
             showValidationErrorAlert(error: error)
         }
@@ -142,23 +141,6 @@ final class LoginVC: UIViewController {
         countryFlagImageView.image = country.flag
     }
     
-    /// Shows a loading spinner overlay
-    private func showLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = false
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides loading spinner overlay
-    private func hideLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = true
-            MBProgressHUD.hide(for: self.view, animated: true)
-        }
-    }
     
     /// Shows error alert with retry option on login failure
     private func showErrorAlert(error: NetworkError) {

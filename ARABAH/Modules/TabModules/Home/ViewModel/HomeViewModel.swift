@@ -15,17 +15,10 @@ import CoreLocation
 /// - State management
 /// - Error handling
 final class HomeViewModel: NSObject, ObservableObject {
-    
-    // Tracks the current state of the view model
-    enum State {
-        case idle       // Initial state, nothing happening
-        case loading    // Data is being fetched
-        case success    // Data loaded successfully
-        case failure(NetworkError)  // Something went wrong
-    }
+
     
     // These properties automatically notify views when they change
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<HomeModal> = .idle
     @Published private(set) var banner: [Banner] = []       // Banner ads data
     @Published private(set) var category: [Categorys] = []  // Product categories
     @Published private(set) var latProduct: [LatestProduct] = []  // Latest products
@@ -82,7 +75,7 @@ final class HomeViewModel: NSObject, ObservableObject {
             self.banner = contentBody.banner ?? []
             self.category = contentBody.category ?? []
             self.latProduct = contentBody.latestProduct ?? []
-            self.state = .success
+            self.state = .success(response)
         }
         .store(in: &cancellables)  // Keep the request alive
     }

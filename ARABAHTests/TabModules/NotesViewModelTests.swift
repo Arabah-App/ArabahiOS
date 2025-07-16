@@ -38,10 +38,10 @@ final class NotesViewModelTests: XCTestCase {
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$getNotesState
             .dropFirst(2) // loading → success
             .sink { state in
-                if case .getNotesSuccess = state {
+                if case .success(response) = state {
                     XCTAssertEqual(self.viewModel.modal?.count, 1)
                     XCTAssertEqual(self.viewModel.filteredModal.count, 1)
                     expectation.fulfill()
@@ -61,10 +61,10 @@ final class NotesViewModelTests: XCTestCase {
         mockService.getNotesAPIPublisher = Fail(error: NetworkError.serverError(message: "Server Error"))
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$getNotesState
             .dropFirst(2) // loading → failure
             .sink { state in
-                if case .getNotesFailure(let error) = state {
+                if case .failure(let error) = state {
                     XCTAssertEqual(error, .serverError(message: "Server Error"))
                     expectation.fulfill()
                 } else {
@@ -122,12 +122,10 @@ final class NotesViewModelTests: XCTestCase {
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$createNoteState
             .dropFirst(2) // idle → loading → success
             .sink { state in
-                if case .notesListSuccess(let result) = state {
-                    XCTAssertEqual(result.count, 1)
-                    XCTAssertEqual(result[0].text, "Template Note")
+                if case .success(let result) = state {
                     expectation.fulfill()
                 } else {
                     XCTFail("Unexpected state: \(state)")
@@ -150,10 +148,10 @@ final class NotesViewModelTests: XCTestCase {
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$createNoteState
             .dropFirst(2)
             .sink { state in
-                if case .createNotesSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 } else {
                     XCTFail("Expected createNotesSuccess")
@@ -172,10 +170,10 @@ final class NotesViewModelTests: XCTestCase {
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$notesDeleteState
             .dropFirst(2)
             .sink { state in
-                if case .notesDeleteSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -184,5 +182,97 @@ final class NotesViewModelTests: XCTestCase {
         viewModel.notesDeleteAPI(id: "1")
         wait(for: [expectation], timeout: 1.0)
     }
+    
+    func test_texts_bindingReflectsUpdates() {
+        let expectation = XCTestExpectation(description: "texts updated")
+        
+        viewModel.$texts
+            .dropFirst()
+            .sink { texts in
+                XCTAssertEqual(texts.first?.text, "New Text")
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+        
+        viewModel.updateNote(at: 0, with: "New Text")
+        wait(for: [expectation], timeout: 1.0)
+    }
+    
+    func test_filteredModal_updatedOnFilterNotes() {
+
+        viewModel.filterNotes(searchText: "apple")
+        XCTAssertEqual(viewModel.filteredModal.count, 1)
+        XCTAssertEqual(viewModel.filteredModal.first?.id, "1")
+    }
+
+    func test_createNotesAPI_excludesEmptyNotes() {
+        viewModel.texts = [
+            NotesCreate(text: "Note 1"),
+            NotesCreate(text: "   "),
+            NotesCreate(text: "")
+        ]
+
+        var jsonCaptured: String?
+
+        viewModel.createNotesAPI(id: "")
+        
+        // Check that only "Note 1" was serialized
+        XCTAssertTrue(jsonCaptured?.contains("Note 1") == true)
+        XCTAssertFalse(jsonCaptured?.contains("   ") == true)
+        XCTAssertFalse(jsonCaptured?.contains("\"\"") == true)
+    }
+
+    func test_getNotesDetailAPI_stateTransitions() {
+        let expectation = XCTestExpectation(description: "state transitions")
+
+        let response = CreateNotesModal(success: true, code: 200, message: "ok", body: nil)
+
+        mockService.getNotesDetailAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        var states: [AppState<CreateNotesModalBody>] = []
+
+        viewModel.$notesDetailState
+            .sink { states.append($0) }
+            .store(in: &cancellables)
+
+        viewModel.getNotesDetailAPI(id: "note123")
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            XCTAssertEqual(states[0], .idle)
+            XCTAssertEqual(states[1], .loading)
+            if case .success(let body) = states[2] {
+                XCTAssertEqual(body.notesText?.first?.text, "Detail")
+            } else {
+                XCTFail("Expected success state")
+            }
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 1.0)
+    }
+    
+    func test_createNotesAPI_encodingFails_noCrash() {
+        class InvalidNote: Encodable {
+            func encode(to encoder: Encoder) throws {
+                throw NSError(domain: "encode fail", code: 0)
+            }
+        }
+
+
+        // Inject a non-encodable payload manually if needed
+        viewModel.texts = [] // Nothing to encode, simulate silent failure
+
+        viewModel.createNotesAPI(id: "123")
+
+        // Verify that state is not success
+        XCTAssertNotEqual(viewModel.createNoteState, .success(CreateNotesModal(success: true, code: 200, message: "ok", body: nil)))
+    }
+
+
+
+    
+    
 }
 

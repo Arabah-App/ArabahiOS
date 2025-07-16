@@ -11,21 +11,13 @@ import Combine
 /// ViewModel responsible for handling notification-related API calls and data management.
 final class NotificationViewModel {
     
-    // MARK: - State Enum
-    // Tracks the current state of view model operations
-    enum State {
-        case idle                  // Initial state, no operation in progress
-        case loading               // API call in progress
-        case getNotificationListSuccess  // Successfully fetched notifications
-        case deleteSuccess         // Successfully deleted notifications
-        case getNotificationListFailure(NetworkError)  // Failed to fetch notifications
-        case deleteFailure(NetworkError)  // Failed to delete notifications
-    }
+
     
     // MARK: - Properties
     
     // Published state that views can observe
-    @Published private(set) var state: State = .idle
+    @Published private(set) var listState: AppState<GetNotificationModal> = .idle
+    @Published private(set) var listDeleteState: AppState<NewCommonString> = .idle
     
     // Collection of notification cell models for the table view
     @Published private(set) var notificationCellModels: [NotificationCellModel] = []
@@ -54,19 +46,19 @@ final class NotificationViewModel {
     /// Fetches the list of notifications from the server
     func getNotificationList() {
         // Set loading state before making API call
-        state = .loading
+        listState = .loading
         
         networkService.getNotificationList()
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
             // Handle API completion (failure case)
             if case .failure(let error) = completion {
-                self?.state = .getNotificationListFailure(error)
+                self?.listState = .failure(error)
             }
         } receiveValue: { [weak self] (response: GetNotificationModal) in
             // Handle successful API response
             guard let bodies = response.body else {
-                self?.state = .getNotificationListFailure(.invalidResponse)
+                self?.listState = .failure(.invalidResponse)
                 return
             }
             
@@ -80,14 +72,14 @@ final class NotificationViewModel {
             }
             
             // Update state to success
-            self?.state = .getNotificationListSuccess
+            self?.listState = .success(response)
         }
         .store(in: &cancellables)
     }
     
     /// Retry mechanism for failed notification list fetch
     func retryGetNotification() {
-        state = .idle
+        listState = .idle
         self.getNotificationList()
     }
     
@@ -95,24 +87,24 @@ final class NotificationViewModel {
     
     /// Deletes all notifications via API
     func notificationDeleteAPI() {
-        state = .loading
+        listDeleteState = .loading
         networkService.notificationDeleteAPI()
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
             // Handle deletion failure
             if case .failure(let error) = completion {
-                self?.state = .deleteFailure(error)
+                self?.listDeleteState = .failure(error)
             }
-        } receiveValue: { [weak self] (_: NewCommonString) in
+        } receiveValue: { [weak self] (response: NewCommonString) in
             // Handle successful deletion
-            self?.state = .deleteSuccess
+            self?.listDeleteState = .success(response)
         }
         .store(in: &cancellables)
     }
 
     /// Retry mechanism for failed deletion
     func retryDeleteNotification() {
-        state = .idle
+        listDeleteState = .idle
         self.notificationDeleteAPI()
     }
     
@@ -122,7 +114,11 @@ final class NotificationViewModel {
     var isEmpty: Bool {
         return notificationCellModels.isEmpty
     }
-
+    /// List  empty
+    func clearList() {
+        notificationCellModels.removeAll()
+    }
+    
     /// Returns the notification model at specified index
     func model(at index: Int) -> NotificationCellModel? {
         return notificationCellModels[safe: index]

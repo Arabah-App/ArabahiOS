@@ -72,7 +72,7 @@ class AddReviewVC: UIViewController {
     // MARK: - STATE HANDLING
     
     /// Handles different states from ViewModel
-    private func handleStateChange(_ state: AddRatingViewModel.State) {
+    private func handleStateChange(_ state: AppState<AddCommentModal>) {
         switch state {
         case .idle:
             // No special handling needed
@@ -91,7 +91,7 @@ class AddReviewVC: UIViewController {
             // Hide spinner and show error
             hideLoadingIndicator()
             showErrorAlert(error: error)
-        case .validationFailure(let error):
+        case .validationError(let error):
             showValidationAlert(error: error)
             hideLoadingIndicator()
         }
@@ -112,24 +112,6 @@ class AddReviewVC: UIViewController {
     /// Shows error alert for validation
     private func showValidationAlert(error: NetworkError) {
         CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
-    }
-    
-    /// Shows loading spinner and disables interaction
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides loading spinner and enables interaction
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: view, animated: true)
-        }
     }
     
     // MARK: - ACTIONS

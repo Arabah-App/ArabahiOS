@@ -49,53 +49,69 @@ class NotificationListVC: UIViewController {
 
     /// Binds to ViewModel state changes
     private func bindViewModel() {
-        viewModel.$state
+        viewModel.$listState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.handleStateChange(state)
+                self?.handleListState(state)
             }
             .store(in: &cancellables)
+        
+        viewModel.$listDeleteState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.handleListDeleteState(state)
+            }
+            .store(in: &cancellables)
+        
     }
 
     // MARK: - STATE HANDLING
-    
-    /// Handles different states from ViewModel
-    private func handleStateChange(_ state: NotificationViewModel.State) {
+    private func handleListState(_ state: AppState<GetNotificationModal>) {
         switch state {
-        case .idle:
-            // No action needed for idle state
-            break
             
+        case .idle:
+            break
         case .loading:
-            // Show loading state
             isLoading = true
             showLoadingIndicator()
-            
-        case .getNotificationListSuccess:
-            // Handle successful notification fetch
+            notiListTbl.showAnimatedGradientSkeleton()
+        case .success(_):
             hideLoadingIndicator()
             isLoading = false
             notiListTbl.reloadData()
             clearBtn.isHidden = viewModel.isEmpty
             setNoDataMsg()
-            
-        case .getNotificationListFailure(let error):
-            // Handle notification fetch failure
+        case .failure(let error):
             isLoading = false
             hideLoadingIndicator()
             showErrorAlertListAPI(error: error)
             setNoDataMsg()
             notiListTbl.reloadData()
+        case .validationError(_):
+            isLoading = false
+            setNoDataMsg()
+            notiListTbl.reloadData()
+        }
+    }
+    
+    
+    private func handleListDeleteState(_ state: AppState<NewCommonString>) {
+        switch state {
             
-        case .deleteSuccess:
-            // Handle successful deletion - refresh list
+        case .idle:
+            break
+        case .loading:
+            isLoading = true
+            showLoadingIndicator()
+        case .success(_):
             notificaitonListAPI()
             hideLoadingIndicator()
-            
-        case .deleteFailure(let error):
-            // Handle deletion failure
+        case .failure(let error):
             hideLoadingIndicator()
             showErrorAlertDeleteAPI(error: error)
+        case .validationError(_):
+            hideLoadingIndicator()
+            
         }
     }
 
@@ -112,27 +128,6 @@ class NotificationListVC: UIViewController {
     private func showErrorAlertDeleteAPI(error: NetworkError) {
         CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
             self?.viewModel.retryDeleteNotification()
-        }
-    }
-
-    // MARK: - LOADING INDICATORS
-    
-    /// Shows loading spinner
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-       
-    }
-
-    /// Hides loading spinner
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
 

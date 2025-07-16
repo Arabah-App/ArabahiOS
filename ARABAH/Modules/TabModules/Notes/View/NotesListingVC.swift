@@ -157,41 +157,58 @@ extension NotesListingVC {
     
     /// Binds to ViewModel state changes
     private func bindViewModel() {
-        viewModel.$state
+        viewModel.$getNotesState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.handleStateChange(state)
+                self?.getNotesState(state)
             }
             .store(in: &cancellables)
+        
+        viewModel.$notesDeleteState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.notesDeleteState(state)
+            }
+            .store(in: &cancellables)
+        
     }
     
     /// Handles different ViewModel states
-    private func handleStateChange(_ state: NotesViewModel.State) {
+    private func notesDeleteState(_ state: AppState<NewCommonString>) {
         switch state {
+            
+        case .idle:
+            break
         case .loading:
-            showLoadingIndicator()  // Show spinner during network operations
-            
-        case .getNotesSuccess:
-            hideLoadingIndicator()
-            NotesTblVieww.reloadData()  // Refresh with loaded notes
-            setNoDataMsg(count: viewModel.filteredModal.count)  // Update empty state
-            
-        case .getNotesFailure(let error):
-            hideLoadingIndicator()
-            setNoDataMsg(count: 0)
-            showErrorAlert(title: appName, message: error.localizedDescription)
-            
-        case .notesDeleteSuccess:
+            showLoadingIndicator()
+        case .success(_):
             hideLoadingIndicator()
             showSuccess(message: RegexMessages.deleteNote)  // Show success message
             viewModel.getNotesAPI()  // Refresh list after deletion
-            
-        case .notesDeleteFailure(let error):
+        case .failure(let error):
             hideLoadingIndicator()
             showErrorAlert(title: appName, message: error.localizedDescription)
-            
-        default:
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    private func getNotesState(_ state: AppState<GetNotesModal>) {
+        switch state {
+        case .idle:
             break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            hideLoadingIndicator()
+            NotesTblVieww.reloadData()  // Refresh with loaded notes
+            setNoDataMsg(count: viewModel.filteredModal.count)  // Update empty state
+        case .failure(let error):
+            hideLoadingIndicator()
+            setNoDataMsg(count: 0)
+            showErrorAlert(title: appName, message: error.localizedDescription)
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
     
@@ -201,25 +218,6 @@ extension NotesListingVC {
             NotesTblVieww.setNoDataMessage(PlaceHolderTitleRegex.noDataFound, txtColor: UIColor.set)
         } else {
             NotesTblVieww.backgroundView = nil
-        }
-    }
-    
-    /// Shows loading spinner and disables interaction
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-        
-    }
-    
-    /// Hides loading spinner and enables interaction
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
     

@@ -101,7 +101,7 @@ class TermsConditionVC: UIViewController {
     }
     
     /// Handles different states returned by the ViewModel
-    private func handleStateChange(_ state: TermPrivacyViewModel.State) {
+    private func handleStateChange(_ state: AppState<TermsPrivacyModelBody>) {
         switch state {
         case .idle:
             break // Do nothing
@@ -114,28 +114,11 @@ class TermsConditionVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             showErrorAlert(error: error)
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
-    
-    // MARK: - LOADING INDICATORS
-    
-    /// Displays a blocking loading indicator over the view
-    private func showLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = false
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides the loading indicator and re-enables UI interaction
-    private func hideLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = true
-            MBProgressHUD.hide(for: self.view, animated: true)
-        }
-    }
+ 
     
     /// Displays an error alert with a retry option
     private func showErrorAlert(error: NetworkError) {

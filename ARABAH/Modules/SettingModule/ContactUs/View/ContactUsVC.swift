@@ -94,21 +94,21 @@ class ContactUsVC: UIViewController, UITextViewDelegate {
     }
     
     /// Handles ViewModel state updates and reflects UI changes
-    private func handleStateChange(_ state: ContactUsViewModel.State) {
+    private func handleStateChange(_ state: AppState<ContactUsModal>) {
         switch state {
         case .idle:
             break
         case .loading:
             showLoadingIndicator()
         case .success(let response):
-            hideLoadingIndicator()
+            showLoadingIndicator()
             handleSuccess(model: response)
         case .failure(let error):
-            hideLoadingIndicator()
+            showLoadingIndicator()
             showErrorAlert(error: error)
-        case .validationFailure(let error):
+        case .validationError(let error):
             showValidationAlert(error: error)
-            hideLoadingIndicator()
+            showLoadingIndicator()
         }
     }
     
@@ -117,27 +117,7 @@ class ContactUsVC: UIViewController, UITextViewDelegate {
         CommonUtilities.shared.showAlert(message: model.message ?? "", isSuccess: .success)
         self.navigationController?.popViewController(animated: true)
     }
-    
-    // MARK: - HELPERS
-    
-    /// Displays a loading indicator and disables interaction
-    private func showLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = false
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides the loading indicator and re-enables interaction
-    private func hideLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = true
-            MBProgressHUD.hide(for: self.view, animated: true)
-        }
-    }
-    
+        
     /// Shows error alert and allows retry
     private func showErrorAlert(error: NetworkError) {
         CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in

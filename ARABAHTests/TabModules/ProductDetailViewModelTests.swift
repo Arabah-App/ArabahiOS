@@ -33,8 +33,6 @@ final class ProductDetailViewModelTests: XCTestCase {
 
     func testProductDetailSuccess() {
         let expectation = XCTestExpectation(description: "Product detail fetched successfully")
-
-
         
         let dummyModal = ProductDetailModal(success: true, code: 200, message: "Success", body: nil)
 
@@ -42,10 +40,10 @@ final class ProductDetailViewModelTests: XCTestCase {
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$productDetailState
             .dropFirst()
             .sink { state in
-                if case .prodcutDetailSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -65,10 +63,10 @@ final class ProductDetailViewModelTests: XCTestCase {
         mockService.productDetailAPIPublisher = Fail(error: NetworkError.invalidResponse)
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$productDetailState
             .dropFirst()
             .sink { state in
-                if case .prodcutDetailFailure(let error) = state {
+                if case .failure(let error) = state {
                     XCTAssertEqual(error, .invalidResponse)
                     expectation.fulfill()
                 }
@@ -89,10 +87,10 @@ final class ProductDetailViewModelTests: XCTestCase {
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$likeState
             .dropFirst()
             .sink { state in
-                if case .likeSuccess(let status) = state {
+                if case .success(let status) = state {
                     XCTAssertEqual(status, 1)
                     expectation.fulfill()
                 }
@@ -111,10 +109,10 @@ final class ProductDetailViewModelTests: XCTestCase {
         mockService.notifyMeAPIPublisher = Fail(error: NetworkError.networkError("Failed"))
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$notifyState
             .dropFirst()
             .sink { state in
-                if case .notifyFailure(let error) = state {
+                if case .failure(let error) = state {
                     XCTAssertEqual(error, .networkError("Failed"))
                     expectation.fulfill()
                 }
@@ -135,10 +133,10 @@ final class ProductDetailViewModelTests: XCTestCase {
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$addToShopState
             .dropFirst()
             .sink { state in
-                if case .addToShopSuccess(let message) = state {
+                if case .success(let message) = state {
                     XCTAssertEqual(message, "Added")
                     expectation.fulfill()
                 }
@@ -152,18 +150,16 @@ final class ProductDetailViewModelTests: XCTestCase {
     func testQRDetailSuccess() {
         let expectation = XCTestExpectation(description: "QR product detail fetched successfully")
 
-
-        
         let dummyModal = ProductDetailModal(success: true, code: 200, message: "Success", body: nil)
 
         mockService.productDetailByQrCodePublisher = Just(dummyModal)
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$QRDetailState
             .dropFirst()
             .sink { state in
-                if case .QRDetailSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -180,10 +176,10 @@ final class ProductDetailViewModelTests: XCTestCase {
         mockService.productDetailByQrCodePublisher = Fail(error: NetworkError.invalidResponse)
             .eraseToAnyPublisher()
 
-        viewModel.$state
+        viewModel.$QRDetailState
             .dropFirst()
             .sink { state in
-                if case .QRDetailFailure(let error) = state {
+                if case .failure(let error) = state {
                     XCTAssertEqual(error, .invalidResponse)
                     expectation.fulfill()
                 }
@@ -194,14 +190,11 @@ final class ProductDetailViewModelTests: XCTestCase {
         wait(for: [expectation], timeout: 1.0)
     }
 
-    
     // MARK: - Retry Tests
 
     func testRetryProductDetailAPI() {
         let expectation = XCTestExpectation(description: "Retry product detail API")
 
-        
-        
         let dummyModal = ProductDetailModal(success: true, code: 200, message: "Success", body: nil)
 
         mockService.productDetailAPIPublisher = Just(dummyModal)
@@ -210,10 +203,10 @@ final class ProductDetailViewModelTests: XCTestCase {
 
         viewModel.productDetailAPI(id: "retry123")
 
-        viewModel.$state
+        viewModel.$productDetailState
             .dropFirst(2)
             .sink { state in
-                if case .prodcutDetailSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -223,4 +216,3 @@ final class ProductDetailViewModelTests: XCTestCase {
         wait(for: [expectation], timeout: 1.0)
     }
 }
-

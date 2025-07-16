@@ -11,20 +11,10 @@ import Combine
 /// Handles fetching and displaying product ratings and reviews
 final class RatingListViewModel {
     
-    // MARK: - State Management
-    
-    /// Tracks the current state of rating data operations
-    enum State: Equatable {
-        case idle       // Initial state, no active operations
-        case loading    // Currently fetching ratings
-        case success    // Successfully loaded ratings
-        case failure(NetworkError)  // Failed to load ratings with error
-    }
-    
     // MARK: - Published Outputs
     
     /// Current state of the ViewModel (observed by the view)
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<GetRaitingModal> = .idle
     
     /// Contains all rating data including average and count
     @Published private(set) var ratingBody: GetRaitingModalBody?
@@ -101,7 +91,7 @@ final class RatingListViewModel {
             self.showNoDataMessage = (body.ratinglist?.isEmpty ?? true)
             
             // Mark operation as successful
-            self.state = .success
+            self.state = .success(response)
         }
         .store(in: &cancellables)
     }

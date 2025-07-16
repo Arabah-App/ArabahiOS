@@ -316,4 +316,131 @@ final class TermPrivacyViewModelTests: XCTestCase {
         // Then
         wait(for: [termsExpectation, privacyExpectation, aboutExpectation], timeout: 3.0)
     }
+    
+    
+    func testStateTransitionSequenceOnSuccess() {
+        // Given
+        let mockService = MockSettingsService()
+        let body = TermsPrivacyModelBody(
+            id: "1", type: 0, title: "Terms", description: "", descriptionArabic: "", updatedAt: "")
+        
+        mockService.fetchContentPublisher = Just(TermsPrivacyModel(
+            success: true, code: 200, message: "OK", body: nil)
+        ).setFailureType(to: NetworkError.self)
+         .eraseToAnyPublisher()
+
+        let viewModel = TermPrivacyViewModel(settingsService: mockService)
+        
+        var stateHistory: [AppState<TermsPrivacyModelBody>] = []
+        let expectation = XCTestExpectation(description: "Should emit loading then success")
+        expectation.expectedFulfillmentCount = 2
+        
+        // When
+        viewModel.$state
+            .dropFirst()
+            .sink { state in
+                stateHistory.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.fetchContent(with: 0)
+
+        // Then
+        wait(for: [expectation], timeout: 2.0)
+        XCTAssertEqual(stateHistory.count, 2)
+        XCTAssertEqual(stateHistory[0], .loading)
+        if case .success(let content) = stateHistory[1] {
+            XCTAssertEqual(content.title, "Terms")
+        } else {
+            XCTFail("Expected .success in second state")
+        }
+    }
+
+    func testCombineBindingEmitsCorrectValue() {
+        // Given
+        let mockService = MockSettingsService()
+        let expectedTitle = "Privacy Policy"
+        let body = TermsPrivacyModelBody(
+            id: "1", type: 2, title: expectedTitle, description: "", descriptionArabic: "", updatedAt: "")
+        
+        mockService.fetchContentPublisher = Just(TermsPrivacyModel(
+            success: true, code: 200, message: "OK", body: body)
+        ).setFailureType(to: NetworkError.self)
+         .eraseToAnyPublisher()
+
+        let viewModel = TermPrivacyViewModel(settingsService: mockService)
+
+        let expectation = XCTestExpectation(description: "Should emit correct content")
+
+        // When
+        viewModel.$state
+            .dropFirst()
+            .sink { state in
+                if case .success(let content) = state {
+                    XCTAssertEqual(content.title, expectedTitle)
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        viewModel.fetchContent(with: 2)
+
+        // Then
+        wait(for: [expectation], timeout: 2.0)
+    }
+
+    func testRetryStartsWithIdleThenLoading() {
+        // Given
+        let mockService = MockSettingsService()
+        let body = TermsPrivacyModelBody(
+            id: "1", type: 1, title: "About Us", description: "", descriptionArabic: "", updatedAt: "")
+        
+        // First call fails
+        mockService.fetchContentPublisher = Fail(error: NetworkError.unauthorized)
+            .eraseToAnyPublisher()
+        
+        let viewModel = TermPrivacyViewModel(settingsService: mockService)
+
+        var stateChanges: [AppState<TermsPrivacyModelBody>] = []
+        let expectation = XCTestExpectation(description: "Should emit failure, idle, loading, success")
+        expectation.expectedFulfillmentCount = 4
+
+        viewModel.$state
+            .sink { state in
+                stateChanges.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        // Trigger failure
+        viewModel.fetchContent(with: 1)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // Setup for retry
+            mockService.fetchContentPublisher = Just(TermsPrivacyModel(
+                success: true,
+                code: 200,
+                message: "OK",
+                body: body
+            )).setFailureType(to: NetworkError.self)
+             .eraseToAnyPublisher()
+            
+            viewModel.retryFetchContent()
+        }
+
+        // Then
+        wait(for: [expectation], timeout: 3.0)
+
+        XCTAssertTrue(stateChanges.contains(.idle), "Should include idle before retry")
+        XCTAssertTrue(stateChanges.contains(.loading), "Should go to loading after idle")
+        XCTAssertTrue(stateChanges.contains(where: {
+            if case .success(let value) = $0 {
+                return value.title == "About Us"
+            }
+            return false
+        }), "Should emit success eventually")
+    }
+
+    
 }

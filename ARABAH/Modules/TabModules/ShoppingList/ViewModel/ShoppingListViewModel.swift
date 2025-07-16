@@ -12,22 +12,12 @@ import Combine
 /// Handles fetching, deleting, and clearing shopping lists, as well as maintaining local data state.
 final class ShoppingListViewModel {
 
-    /// Represents the current state of the ViewModel
-    enum State {
-        case idle                  // Initial state, no operation in progress
-        case loading              // API call in progress
-        case listSuccess(GetShoppingListModalBody)  // Shopping list fetch succeeded
-        case listDeleteSuccess    // Item deletion succeeded
-        case listClearSuccess    // List clearing succeeded
-        case listFailure(NetworkError)       // Shopping list fetch failed
-        case listDeleteFailure(NetworkError) // Item deletion failed
-        case listClearFailure(NetworkError)  // List clearing failed
-    }
-
     // MARK: - Properties
     
     /// Published property that notifies subscribers of state changes
-    @Published private(set) var state: State = .idle
+    @Published private(set) var getListState: AppState<GetShoppingListModalBody> = .idle
+    @Published private(set) var listDeleteState: AppState<shoppinglistDeleteModal> = .idle
+    @Published private(set) var listClearState: AppState<CommentModal> = .idle
     
     /// Storage for Combine subscriptions
     private var cancellables = Set<AnyCancellable>()
@@ -64,23 +54,23 @@ final class ShoppingListViewModel {
     
     /// Fetches the shopping list from the API
     func shoppingListAPI() {
-        state = .loading
+        getListState = .loading
 
         networkService.shoppingListAPI()
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
             if case .failure(let error) = completion {
-                self?.state = .listFailure(error)
+                self?.getListState = .failure(error)
             }
         } receiveValue: { [weak self] (response: GetShoppingListModal) in
             guard let self = self, var contentBody = response.body else {
-                self?.state = .listFailure(.invalidResponse)
+                self?.getListState = .failure(.invalidResponse)
                 return
             }
             self.cleanShoppingData(model: &contentBody)
             self.products = self.shoppingList.compactMap({ $0.productID?.product ?? [] }).flatMap { $0 }
             self.totalPrice = self.products.map { $0.price ?? 0.0 }
-            self.state = .listSuccess(contentBody)
+            self.getListState = .success(contentBody)
         }
         .store(in: &cancellables)
     }
@@ -93,17 +83,17 @@ final class ShoppingListViewModel {
     /// Deletes an item from the shopping list via API
     /// - Parameter id: The ID of the item to delete
     func shoppingListDeleteAPI(id: String) {
-        state = .loading
+        listDeleteState = .loading
         
         self.deleteID = id
         networkService.shoppingListDeleteAPI(id: id)
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
             if case .failure(let error) = completion {
-                self?.state = .listDeleteFailure(error)
+                self?.listDeleteState = .failure(error)
             }
         } receiveValue: { [weak self] (response: shoppinglistDeleteModal) in
-            self?.state = .listDeleteSuccess
+            self?.listDeleteState = .success(response)
         }
         .store(in: &cancellables)
     }
@@ -116,16 +106,16 @@ final class ShoppingListViewModel {
     
     /// Clears all items from the shopping list via API
     func shoppingListClearAllAPI() {
-        state = .loading
+        listClearState = .loading
 
         networkService.shoppingListClearAllAPI()
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
             if case .failure(let error) = completion {
-                self?.state = .listClearFailure(error)
+                self?.listClearState = .failure(error)
             }
         } receiveValue: { [weak self] (response: CommentModal) in
-            self?.state = .listClearSuccess
+            self?.listClearState = .success(response)
         }
         .store(in: &cancellables)
     }

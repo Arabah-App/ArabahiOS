@@ -59,49 +59,87 @@ class ShoppingListVC: UIViewController {
     
     /// Binds the ViewModel's state to the ViewController
     private func bindViewModel() {
-        viewModel.$state
+        viewModel.$getListState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.handleStateChange(state)
+                self?.getListState(state)
             }
             .store(in: &cancellables)
+        
+        viewModel.$listDeleteState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.listDeleteState(state)
+            }
+            .store(in: &cancellables)
+        
+        
+        viewModel.$listClearState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.listClearState(state)
+            }
+            .store(in: &cancellables)
+        
     }
     
     /// Handles changes in ViewModel state and updates UI accordingly
-    private func handleStateChange(_ state: ShoppingListViewModel.State) {
+    
+    private func listClearState(_ state: AppState<CommentModal>) {
+        
         switch state {
-        case .idle:
-            break // No action needed for idle state
             
+        case .idle:
+            break
         case .loading:
             showLoadingIndicator()
-            
-        case .listSuccess:
-            hideLoadingIndicator()
-            updateUI()
-            
-        case .listDeleteSuccess:
-            hideLoadingIndicator()
-            // Refresh list after successful deletion
-            viewModel.shoppingListAPI()
-            
-        case .listClearSuccess:
+        case .success(_):
             hideLoadingIndicator()
             // Refresh list after successful clear
             viewModel.shoppingListAPI()
+        case .failure(let error):
+            hideLoadingIndicator()
+            showErrorAlertListClear(error: error)
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    private func listDeleteState(_ state: AppState<shoppinglistDeleteModal>) {
+        
+        switch state {
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            hideLoadingIndicator()
+            // Refresh list after successful deletion
+            viewModel.shoppingListAPI()
+        case .failure(let error):
+            hideLoadingIndicator()
+            showErrorAlertDelete(error: error)
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    private func getListState(_ state: AppState<GetShoppingListModalBody>) {
+        switch state {
             
-        case .listFailure(let error):
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            hideLoadingIndicator()
+            updateUI()
+        case .failure(let error):
             hideLoadingIndicator()
             lblNodata.isHidden = false
             showErrorAlertList(error: error)
-            
-        case .listDeleteFailure(let error):
+        case .validationError(_):
             hideLoadingIndicator()
-            showErrorAlertDelete(error: error)
-            
-        case .listClearFailure(let error):
-            hideLoadingIndicator()
-            showErrorAlertListClear(error: error)
         }
     }
     
@@ -147,26 +185,6 @@ class ShoppingListVC: UIViewController {
     private func showErrorAlertListClear(error: NetworkError) {
         CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
             self?.viewModel.retryShoppingListClearAllAPI()
-        }
-    }
-    
-    // MARK: - Loading Indicators
-    
-    /// Shows loading indicator and disables user interaction
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides loading indicator and enables user interaction
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
     

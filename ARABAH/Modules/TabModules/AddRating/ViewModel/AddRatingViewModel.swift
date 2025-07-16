@@ -4,7 +4,7 @@ import Combine
 /// Handles submitting and validating product ratings and reviews
 final class AddRatingViewModel {
     
-    // MARK: - Inputs / Output
+    // MARK: - Inputs
     
     // Bundles all the data needed to submit a review
     struct Inputs {
@@ -13,19 +13,10 @@ final class AddRatingViewModel {
         var review: String    // Written review text
     }
     
-    // Tracks the current state of review submission
-    enum State : Equatable {
-        case idle       // Ready for input
-        case loading   // Currently submitting review
-        case success   // Review submitted successfully
-        case failure(NetworkError)  // Submission failed with error
-        case validationFailure(NetworkError)  // Validation failed with error
-    }
-    
     // MARK: - Properties
     
     // Current state that views can observe
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<AddCommentModal> = .idle
     
     // Stores Combine subscriptions
     private var cancellables = Set<AnyCancellable>()
@@ -89,9 +80,9 @@ final class AddRatingViewModel {
             if case .failure(let error) = completion {
                 self?.state = .failure(error)
             }
-        } receiveValue: { [weak self] (_: AddCommentModal) in
+        } receiveValue: { [weak self] (response: AddCommentModal) in
             // Mark as successful on valid response
-            self?.state = .success
+            self?.state = .success(response)
         }
         .store(in: &cancellables)
     }
@@ -100,12 +91,14 @@ final class AddRatingViewModel {
     /// - Parameter description: The review text to validate
     /// - Returns: True if valid, false if empty (shows error alert)
     private func validateInput(description: String) -> Bool {
-        if description.trimmingCharacters(in: .whitespaces).isEmpty {
-            // Show error if review is empty
-            state = .validationFailure(.validationError(RegexMessages.invalidEmptyDescription))
-            
+        let validator = Validator.validateAddRating(description)
+        switch validator {
+        case .success:
+            return true
+        case .failure(let error):
+            state = .validationError(.validationError(error.localizedDescription))
             return false
         }
-        return true
+        
     }
 }

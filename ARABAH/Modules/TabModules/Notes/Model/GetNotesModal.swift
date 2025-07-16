@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - GetNotesModal
-struct GetNotesModal: Codable {
+struct GetNotesModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct GetNotesModal: Codable {
 }
 
 // MARK: - GetNotesModalBody
-struct GetNotesModalBody: Codable {
+struct GetNotesModalBody: Codable, Equatable {
     let id, userID, createdAt, updatedAt: String?
     let notesText: [NotesText]?
 

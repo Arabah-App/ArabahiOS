@@ -324,7 +324,7 @@ struct SimilarProduct: Codable {
 }
 
 // MARK: - UpdatedListElement
-struct UpdatedListElement: Codable {
+struct UpdatedListElement: Codable, Equatable {
     let shopName: String?
     let price: Double?
     let location, date, id: String?

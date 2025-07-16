@@ -193,24 +193,7 @@ class SubCatDetailVC: UIViewController, SocketDelegate, RangeSeekSliderDelegate,
 
     }
     
-    /// Binds ViewModel to ViewController
-    private func bindViewModel() {
-        // State changes handling
-        viewModel.$state
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] state in
-                self?.handleState(state)
-            }
-            .store(in: &cancellables)
-        
-        // Data model changes handling
-        viewModel.$modal
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.updateUI()
-            }
-            .store(in: &cancellables)
-    }
+
     
     // MARK: - UI Updates
     
@@ -318,80 +301,157 @@ class SubCatDetailVC: UIViewController, SocketDelegate, RangeSeekSliderDelegate,
         }
     }
     
+    /// Binds ViewModel to ViewController
+    private func bindViewModel() {
+        // State changes handling
+        viewModel.$productDetailState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.productDetailState(state)
+            }
+            .store(in: &cancellables)
+        
+        
+        viewModel.$QRDetailState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.QRDetailState(state)
+            }
+            .store(in: &cancellables)
+        
+        viewModel.$notifyState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.notifyState(state)
+            }
+            .store(in: &cancellables)
+        
+        viewModel.$likeState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.likeState(state)
+            }
+            .store(in: &cancellables)
+        
+        viewModel.$addToShopState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.addToShopState(state)
+            }
+            .store(in: &cancellables)
+        
+        // Data model changes handling
+        viewModel.$modal
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateUI()
+            }
+            .store(in: &cancellables)
+    }
+    
+    
     // MARK: - State Handling
     
     /// Handles different states from ViewModel
-    private func handleState(_ state: ProductDetailViewModel.State) {
+    private func addToShopState(_ state: AppState<String>) {
         switch state {
-        case .idle:
-            // No action needed in idle state
-            break
             
+        case .idle:
+            break
         case .loading:
             showLoadingIndicator()
-            
-        case .prodcutDetailSuccess, .QRDetailSuccess:
+        case .success(let message):
             hideLoadingIndicator()
-            scrollView.setContentOffset(.zero, animated: true)
-            MainView.isHidden = false
-            scrollView.isHidden = false
+            CommonUtilities.shared.showAlert(message: message, isSuccess: .success)
+        case .failure(let error):
+           hideLoadingIndicator()
+            self.handleAddToShopError(error: error)
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+        
+    }
+    
+    private func likeState(_ state: AppState<Int>) {
+        switch state {
             
-        case .notifySuccess(let status):
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(let status):
+            hideLoadingIndicator()
+            heartBtn.isSelected = status == 1
+            let alertMsg = status == 1 ? RegexMessages.productLike : RegexMessages.productDislike
+            CommonUtilities.shared.showAlert(message: alertMsg, isSuccess: .success)
+        case .failure(let error):
+            hideLoadingIndicator()
+             self.handleLikeAPIError(error: error)
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    private func notifyState(_ state: AppState<Int>) {
+        switch state {
+            
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(let status):
             hideLoadingIndicator()
             viewModel.updateNotifyMe(notifyme: status)
             if status == 1 {
                 CommonUtilities.shared.showAlert(message: RegexMessages.priceChangeNotify, isSuccess: .success)
             }
-            
-        case .likeSuccess(let status):
+        case .failure(let error):
             hideLoadingIndicator()
-            heartBtn.isSelected = status == 1
-            let alertMsg = status == 1 ? RegexMessages.productLike : RegexMessages.productDislike
-            CommonUtilities.shared.showAlert(message: alertMsg, isSuccess: .success)
-            
-        case .addToShopSuccess(let message):
+            self.handleNotifyMeError(error: error)
+        case .validationError(_):
             hideLoadingIndicator()
-            CommonUtilities.shared.showAlert(message: message, isSuccess: .success)
-            
-        case .prodcutDetailFailure(let error):
+        }
+    }
+    
+    private func QRDetailState(_ state: AppState<ProductDetailModal>) {
+        
+        switch state {
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            hideLoadingIndicator()
+            scrollView.setContentOffset(.zero, animated: true)
+            MainView.isHidden = false
+            scrollView.isHidden = false
+        case .failure(let error):
+            hideLoadingIndicator()
+            self.handleQRDetailError(error: error)
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    private func productDetailState(_ state: AppState<ProductDetailModal>) {
+        switch state {
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            hideLoadingIndicator()
+            scrollView.setContentOffset(.zero, animated: true)
+            MainView.isHidden = false
+            scrollView.isHidden = false
+        case .failure(let error):
             self.hideLoadingIndicator()
             self.handleDetailAPIError(error: error)
-            
-        case .QRDetailFailure(let error):
+        case .validationError(_):
             self.hideLoadingIndicator()
-            self.handleQRDetailError(error: error)
-            
-        case .notifyFailure(let error):
-            self.hideLoadingIndicator()
-            self.handleNotifyMeError(error: error)
-            
-        case .likeFailure(let error):
-            self.hideLoadingIndicator()
-            self.handleLikeAPIError(error: error)
-            
-        case .addToShopFailure(let error):
-            self.hideLoadingIndicator()
-            self.handleAddToShopError(error: error)
         }
     }
-    
-    /// Shows loading indicator
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides loading indicator
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
-        }
-    }
+
     
     // MARK: - Socket Handling
     

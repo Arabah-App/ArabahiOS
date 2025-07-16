@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - GetNotificationModal
-struct GetNotificationModal: Codable {
+struct GetNotificationModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct GetNotificationModal: Codable {
 }
 
 // MARK: - GetNotificationModalBody
-struct GetNotificationModalBody: Codable {
+struct GetNotificationModalBody: Codable, Equatable {
     let id: String?
     let userID: String?
     let productID: String?

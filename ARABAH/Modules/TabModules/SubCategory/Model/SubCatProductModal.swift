@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - SubCatProductModal
-struct SubCatProductModal: Codable {
+struct SubCatProductModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct SubCatProductModal: Codable {
 }
 
 // MARK: - SubCatProductModalBody
-struct SubCatProductModalBody: Codable {
+struct SubCatProductModalBody: Codable, Equatable {
     let qrCode, id, userID, categoryNames: String?
     var name,nameArabic, price, image: String?
     let product: [Product]?

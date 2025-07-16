@@ -42,7 +42,6 @@ class NotesVC: UIViewController {
     @IBAction func btnDone(_ sender: UIButton) {
         sender.accessibilityIdentifier = "btnDone"
         viewModel.createNotesAPI(id: notesId)  // Save to server
-        self.navigationController?.popViewController(animated: true)  // Return to previous screen
     }
 
     /// Handles back button tap - discards changes
@@ -186,41 +185,62 @@ extension NotesVC {
 
     /// Binds to ViewModel state changes
     private func bindViewModel() {
-        viewModel.$state
+        viewModel.$notesDetailState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.handleStateChange(state)
+                self?.notesDetailState(state)
             }
             .store(in: &cancellables)
+        
+        
+        viewModel.$createNoteState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.createNoteState(state)
+            }
+            .store(in: &cancellables)
+                
     }
 
     /// Handles different ViewModel states
-    private func handleStateChange(_ state: NotesViewModel.State) {
+     private func createNoteState(_ state: AppState<CreateNotesModal>) {
+         switch state {
+             
+         case .idle:
+             break
+         case .loading:
+             showLoadingIndicator()
+         case .success(_):
+             self.navigationController?.popViewController(animated: true)  // Return to previous screen
+         case .failure(let error):
+             hideLoadingIndicator()
+             showRetryAlert(error: error) { [weak self] in
+                 self?.viewModel.createNotesAPI(id: self?.notesId ?? "")
+             }
+         case .validationError(_):
+             hideLoadingIndicator()
+         }
+    }
+    
+    private func notesDetailState(_ state: AppState<CreateNotesModalBody>) {
         switch state {
-        case .loading:
-            showLoadingIndicator()  // Show spinner during network operations
             
-        case .getNotesDetailSuccess:
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
             hideLoadingIndicator()
             notesTbl.reloadData()  // Refresh with loaded note
-            setNoDataMsg(count: viewModel.texts.count)  // Update empty state
-            
-        case .notesDetailFailure(let error):
+            setNoDataMsg(count: viewModel.texts.count)
+        case .failure(let error):
             hideLoadingIndicator()
             setNoDataMsg(count: 0)
-            showRetryAlert(error: error) {
-                self.viewModel.getNotesDetailAPI(id: self.notesId)  // Retry loading
+            showRetryAlert(error: error) { [weak self] in
+                self?.viewModel.getNotesDetailAPI(id: self?.notesId ?? "")  // Retry loading
             }
-            
-        case .notesListFailure(let error):
+        case .validationError(_):
             hideLoadingIndicator()
-            setNoDataMsg(count: 0)
-            showRetryAlert(error: error) {
-                self.viewModel.createNotesGetListAPI()  // Retry loading list
-            }
-            
-        default:
-            break
         }
     }
 
@@ -230,25 +250,6 @@ extension NotesVC {
             notesTbl.setNoDataMessage(PlaceHolderTitleRegex.noDataFound, txtColor: UIColor.set)
         } else {
             notesTbl.backgroundView = nil
-        }
-    }
-
-    /// Shows loading spinner
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: view, animated: true)
-        }
-        
-    }
-
-    /// Hides loading spinner
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: view, animated: true)
         }
     }
 

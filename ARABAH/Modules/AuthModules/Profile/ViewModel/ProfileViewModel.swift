@@ -27,24 +27,13 @@ final class ProfileViewModel {
         case logout
     }
     
-    /// Enum representing the current state of the view or process.
-    enum State {
-        case idle
-        case loading
-        case profileLoaded(LoginModalBody)
-        case notificationUpdated
-        case accountDeleted
-        case loggedOut
-        case loadProfilefailure(NetworkError)
-        case notiUpdatefailure(NetworkError)
-        case accDeletefailure(NetworkError)
-        case logOutfailure(NetworkError)
-    }
-    
     // MARK: - Properties
     
     /// Current state of the ViewModel; UI listens to this.
-    @Published private(set) var state: State = .idle
+    @Published private(set) var profileState: AppState<LoginModalBody> = .idle
+    @Published private(set) var updateNotiState: AppState<LoginModal> = .idle
+    @Published private(set) var deleteAccState: AppState<LoginModal> = .idle
+    @Published private(set) var logoutState: AppState<LoginModal> = .idle
     
     /// Stores Combine cancellables.
     private var cancellables = Set<AnyCancellable>()
@@ -67,16 +56,19 @@ final class ProfileViewModel {
     /// Handles all supported actions (e.g. fetch profile, logout).
     /// - Parameter input: Defines what action to perform and with what data.
     func performAction(input: Input) {
-        state = .loading
         
         switch input.actionType {
         case .getProfile:
+            profileState = .loading
             getProfile()
         case .updateNotification(let status):
+            updateNotiState = .loading
             updateNotificationStatus(status: status)
         case .deleteAccount:
+            deleteAccState = .loading
             deleteAccount()
         case .logout:
+            logoutState = .loading
             logout()
         }
     }
@@ -89,12 +81,12 @@ final class ProfileViewModel {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .loadProfilefailure(error)
+                    self?.profileState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: LoginModal) in
                 Store.userDetails = response
                 if let body = response.body {
-                    self?.state = .profileLoaded(body)
+                    self?.profileState = .success(body)
                 }
             }
             .store(in: &cancellables)
@@ -118,12 +110,12 @@ final class ProfileViewModel {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .notiUpdatefailure(error)
+                    self?.updateNotiState = .failure(error)
                 }
-            } receiveValue: { [weak self] (_: LoginModal) in
+            } receiveValue: { [weak self] (response: LoginModal) in
                 // Update local cache and UI
                 Store.userDetails?.body?.isNotification = status
-                self?.state = .notificationUpdated
+                self?.updateNotiState = .success(response)
             }
             .store(in: &cancellables)
     }
@@ -131,7 +123,7 @@ final class ProfileViewModel {
     /// Retries the last failed notification status update.
     func retryUpdateNotiStatus() {
         if let input = updateNotiParam {
-            state = .idle
+            updateNotiState = .idle
             self.updateNotificationStatus(status: input)
         }
     }
@@ -142,18 +134,18 @@ final class ProfileViewModel {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .accDeletefailure(error)
+                    self?.deleteAccState = .failure(error)
                 }
-            } receiveValue: { [weak self] (_: LoginModal) in
+            } receiveValue: { [weak self] (response: LoginModal) in
                 self?.clearUserSession()
-                self?.state = .accountDeleted
+                self?.deleteAccState = .success(response)
             }
             .store(in: &cancellables)
     }
     
     /// Retries the last failed account deletion.
     func retryDeleteAccount() {
-        state = .idle
+        deleteAccState = .idle
         self.deleteAccount()
     }
     
@@ -163,18 +155,18 @@ final class ProfileViewModel {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .logOutfailure(error)
+                    self?.logoutState = .failure(error)
                 }
-            } receiveValue: { [weak self] (_: LoginModal) in
+            } receiveValue: { [weak self] (response: LoginModal) in
                 self?.clearUserSession()
-                self?.state = .loggedOut
+                self?.logoutState = .success(response)
             }
             .store(in: &cancellables)
     }
     
     /// Retries the logout API call.
     func retryLogout() {
-        state = .idle
+        logoutState = .idle
         self.logout()
     }
     

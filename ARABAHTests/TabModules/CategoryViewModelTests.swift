@@ -128,5 +128,98 @@ final class CategoryViewModelTests: XCTestCase {
         XCTAssertEqual(result?.id, "10")
         XCTAssertEqual(viewModel.numberOfItems, 1)
     }
+    
+    func testStateTransitionsToSuccess() {
+        
+        let modal = CategoryListModal(success: true, code: 200, message: "OK", body: CategoryListModalBody(category: []))
+
+        mockService.fetchCategoriesPublisher = Just(modal)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = XCTestExpectation(description: "State transitions from loading to success")
+        expectation.expectedFulfillmentCount = 2
+
+        var states: [AppState<CategoryListModal>] = []
+
+        viewModel.$state
+            .dropFirst()
+            .sink { state in
+                states.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.latitude = "1.0"
+        viewModel.longitude = "2.0"
+        viewModel.fetchCategories()
+
+        wait(for: [expectation], timeout: 2.0)
+        XCTAssertEqual(states.first, .loading)
+        XCTAssertEqual(states.last, .success(modal))
+    }
+
+    
+    func testStateTransitionsToFailure() {
+        mockService.fetchCategoriesPublisher = Fail(error: .invalidResponse)
+            .eraseToAnyPublisher()
+
+        let expectation = XCTestExpectation(description: "State transitions to failure")
+        expectation.expectedFulfillmentCount = 2
+
+        var observedStates: [AppState<CategoryListModal>] = []
+
+        viewModel.$state
+            .dropFirst()
+            .sink { state in
+                observedStates.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.latitude = "3.0"
+        viewModel.longitude = "4.0"
+        viewModel.fetchCategories()
+
+        wait(for: [expectation], timeout: 2.0)
+
+        XCTAssertEqual(observedStates[0], .loading)
+        XCTAssertEqual(observedStates[1], .failure(.invalidResponse))
+    }
+
+    func testEmptyCategoryResponseSetsIsEmptyTrue() {
+        let modal = CategoryListModal(success: true, code: 200, message: "OK", body: CategoryListModalBody(category: []))
+
+        mockService.fetchCategoriesPublisher = Just(modal)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = XCTestExpectation(description: "isEmpty should be true on empty category list")
+
+        viewModel.$isEmpty
+            .dropFirst()
+            .sink { isEmpty in
+                XCTAssertTrue(isEmpty)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.latitude = "12.0"
+        viewModel.longitude = "88.0"
+        viewModel.fetchCategories()
+
+        wait(for: [expectation], timeout: 2.0)
+    }
+
+    func testCategoryCellOutOfBoundsReturnsNil() {
+        // Empty state by default
+        let cell = viewModel.categoryCell(for: 5)
+        XCTAssertNil(cell)
+    }
+
+
+    
+    
+    
 }
 

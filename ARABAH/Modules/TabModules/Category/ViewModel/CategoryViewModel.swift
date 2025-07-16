@@ -19,13 +19,6 @@ final class CategoryViewModel {
         let longitude: String
     }
 
-    /// Enum representing the possible states of the ViewModel.
-    enum State {
-        case idle                      // No operation is in progress
-        case loading                   // Data is currently being fetched
-        case success                   // Data successfully fetched
-        case failure(NetworkError)     // An error occurred during fetching
-    }
 
     // MARK: - Properties
 
@@ -33,7 +26,7 @@ final class CategoryViewModel {
     @Published private(set) var categoryBody: [Categorys]? = []
 
     /// The current loading or result state.
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<CategoryListModal> = .idle
 
     /// Indicates whether the fetched category list is empty.
     @Published private(set) var isEmpty: Bool = false
@@ -79,7 +72,7 @@ final class CategoryViewModel {
                 }
                 self?.categoryBody = contentBody
                 self?.isEmpty = contentBody.isEmpty
-                self?.state = .success
+                self?.state = .success(response)
             }
             .store(in: &cancellables)
     }

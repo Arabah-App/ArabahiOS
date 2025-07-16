@@ -10,22 +10,11 @@ import Combine
 
 final class FavViewModel {
     
-    // MARK: - Output States
-    
-    /// Represents the different states the ViewModel can be in
-    enum State: Equatable {
-        case idle  // Initial state, no operations ongoing
-        case loading  // API call in progress
-        case likeDisLikeSuccess  // Successfully liked/disliked a product
-        case likedListSuccess  // Successfully fetched favorite products
-        case likeDisLikeFailure(NetworkError)  // Failed to like/dislike
-        case likedListFailure(NetworkError)  // Failed to fetch favorites
-    }
-    
     // MARK: - Published Properties
     
     /// Current state of the ViewModel (observable by views)
-    @Published private(set) var state: State = .idle
+    @Published private(set) var likeDislikeState: AppState<LikeModal> = .idle
+    @Published private(set) var likeListState: AppState<LikeProductModal> = .idle
     
     /// Array of favorite products (observable by views)
     @Published private(set) var likedBody: [LikeProductModalBody]? = []
@@ -55,18 +44,18 @@ final class FavViewModel {
     /// - Parameter productID: The ID of the product to like/dislike
     func likeDislikeAPI(productID: String) {
         // Set loading state before API call
-        state = .loading
+        likeDislikeState = .loading
         
         networkService.likeDislikeAPI(productID: productID)
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
             // Handle API failure
             if case .failure(let error) = completion {
-                self?.state = .likeDisLikeFailure(error)
+                self?.likeDislikeState = .failure(error)
             }
         } receiveValue: { [weak self] (response: LikeModal) in
             // Handle successful like/dislike
-            self?.state = .likeDisLikeSuccess
+            self?.likeDislikeState = .success(response)
             
             // Refresh the favorites list to reflect changes
             self?.getProductfavList()
@@ -76,14 +65,14 @@ final class FavViewModel {
 
     /// Fetches the current list of favorite products
     func getProductfavList() {
-        state = .loading
+        likeListState = .loading
         
         networkService.getProductfavList()
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
             // Handle API failure
             if case .failure(let error) = completion {
-                self?.state = .likedListFailure(error)
+                self?.likeListState = .failure(error)
                 
                 // Clear existing data and show no data message
                 self?.likedBody = []
@@ -92,7 +81,7 @@ final class FavViewModel {
         } receiveValue: { [weak self] (response: LikeProductModal) in
             // Validate response contains body
             guard let contentBody = response.body else {
-                self?.state = .likedListFailure(.invalidResponse)
+                self?.likeListState = .failure(.invalidResponse)
                 self?.likedBody = []
                 self?.showNoDataMessage = true
                 return
@@ -101,7 +90,7 @@ final class FavViewModel {
             // Update data and UI state
             self?.likedBody = contentBody
             self?.showNoDataMessage = contentBody.isEmpty
-            self?.state = .likedListSuccess
+            self?.likeListState = .success(response)
         }
         .store(in: &cancellables)
     }

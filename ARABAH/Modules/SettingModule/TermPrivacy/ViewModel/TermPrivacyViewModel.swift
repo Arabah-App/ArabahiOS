@@ -29,7 +29,7 @@ final class TermPrivacyViewModel {
     // MARK: - Properties
     
     /// Publishes state changes to observers (usually the ViewController)
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<TermsPrivacyModelBody> = .idle
     
     /// Set to manage Combine subscriptions and cancel on deinit
     private var cancellables = Set<AnyCancellable>()

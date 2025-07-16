@@ -61,7 +61,7 @@ class FaqVC: UIViewController {
     }
     
     /// Handles different ViewModel state changes and updates UI accordingly
-    private func handleStateChange(_ state: FAQViewModel.State) {
+    private func handleStateChange(_ state: AppState<FaqModal>) {
         switch state {
         case .idle:
             // Do nothing in idle state
@@ -79,6 +79,8 @@ class FaqVC: UIViewController {
             hideLoadingIndicator()
             setNoDataMsg(count: 0)
             showErrorAlert(error: error)
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
     
@@ -89,23 +91,7 @@ class FaqVC: UIViewController {
         }
     }
     
-    /// Displays a progress HUD on screen
-    private func showLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = false
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides the currently active progress HUD
-    private func hideLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = true
-            MBProgressHUD.hide(for: self.view, animated: true)
-        }
-    }
+ 
     
     // MARK: - DATA FETCHING
     

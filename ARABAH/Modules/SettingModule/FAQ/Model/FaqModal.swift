@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - FaqModal
-struct FaqModal: Codable {
+struct FaqModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct FaqModal: Codable {
 }
 
 // MARK: - FaqModalBody
-struct FaqModalBody: Codable {
+struct FaqModalBody: Codable, Equatable {
     var id, question, questionArabic, answer: String?
     let answerArabic, createdAt, updatedAt: String?
     let v: Int?

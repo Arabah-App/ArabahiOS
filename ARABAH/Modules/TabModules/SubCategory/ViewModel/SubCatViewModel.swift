@@ -11,27 +11,13 @@ import Combine
 /// ViewModel class responsible for handling subcategory-related data fetching and business logic.
 final class SubCatViewModel {
 
-    // MARK: - Output
-    
-    /// Represents the current state of the ViewModel
-    enum State : Equatable {
-        case idle                      // Initial state, no action performed
-        case loading                  // Data is being fetched
-        case subCatProductSuccess     // Subcategory products fetched successfully
-        case getLatestProductSuccess  // Latest products fetched successfully
-        case getSimilarProductSuccess // Similar products fetched successfully
-        case addShoppingSuccess       // Product added to cart successfully
-        case authError                // Authentication error occurred
-        case subCatProductFailure(NetworkError)      // Failed to fetch subcategory products
-        case getLatestProductFailure(NetworkError)   // Failed to fetch latest products
-        case getSimilarProductFailure(NetworkError)  // Failed to fetch similar products
-        case addShoppingFailure(NetworkError)        // Failed to add product to cart
-    }
-
     // MARK: - Properties
     
     /// Published property to observe state changes
-    @Published private(set) var state: State = .idle
+    @Published private(set) var subCatProductState: AppState<SubCatProductModal> = .idle
+    @Published private(set) var getLatProductState: AppState<LatestProModal> = .idle
+    @Published private(set) var getSimilarProductState: AppState<SimilarProductModal> = .idle
+    @Published private(set) var addToShopState: AppState<AddShoppingModal> = .idle
     
     /// Published property containing subcategory product data
     @Published private(set) var modal: [SubCatProductModalBody]? = []
@@ -98,17 +84,17 @@ final class SubCatViewModel {
     /// Fetches subcategory products for the given category ID
     /// - Parameter cateogyID: The ID of the category to fetch products for
     func subCatProduct(cateogyID: String) {
-        state = .loading
+        subCatProductState = .loading
         
         networkService.subCatProduct(cateogyID: cateogyID)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .subCatProductFailure(error)
+                    self?.subCatProductState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: SubCatProductModal) in
                 guard let self = self, let contentBody = response.body else {
-                    self?.state = .subCatProductFailure(.invalidResponse)
+                    self?.subCatProductState = .failure(.invalidResponse)
                     return
                 }
                 self.modal = contentBody
@@ -121,23 +107,23 @@ final class SubCatViewModel {
                         productUnit: "₰ \(lowest.cleanPriceString)"
                     )
                 }
-                self.state = .subCatProductSuccess
+                self.subCatProductState = .success(response)
             }
             .store(in: &cancellables)
     }
 
     /// Fetches the latest products
     func getLatestProductAPI() {
-        state = .loading
+        getLatProductState = .loading
         networkService.getLatestProductAPI()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .getLatestProductFailure(error)
+                    self?.getLatProductState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: LatestProModal) in
                 guard let self = self, let contentBody = response.body else {
-                    self?.state = .getLatestProductFailure(.invalidResponse)
+                    self?.getLatProductState = .failure(.invalidResponse)
                     return
                 }
                 self.latestModal = contentBody
@@ -150,7 +136,7 @@ final class SubCatViewModel {
                         productUnit: "₰ \(lowest.cleanPriceString)"
                     )
                 }
-                self.state = .getLatestProductSuccess
+                self.getLatProductState = .success(response)
             }
             .store(in: &cancellables)
     }
@@ -158,17 +144,17 @@ final class SubCatViewModel {
     /// Fetches similar products for the given product ID
     /// - Parameter id: The ID of the product to find similar items for
     func getSimilarProductAPI(id: String) {
-        state = .loading
+        getSimilarProductState = .loading
         
         networkService.getSimilarProductAPI(id: id)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .getSimilarProductFailure(error)
+                    self?.getSimilarProductState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: SimilarProductModal) in
                 guard let self = self, let contentBody = response.body else {
-                    self?.state = .getSimilarProductFailure(.invalidResponse)
+                    self?.getSimilarProductState = .failure(.invalidResponse)
                     return
                 }
                 self.similarModal = contentBody
@@ -181,7 +167,7 @@ final class SubCatViewModel {
                         productUnit: "₰ \(lowest.cleanPriceString)"
                     )
                 }
-                self.state = .getSimilarProductSuccess
+                self.getSimilarProductState = .success(response)
             }
             .store(in: &cancellables)
     }
@@ -190,7 +176,9 @@ final class SubCatViewModel {
     /// - Parameter index: The index of the product in the current display items
     func addProductToCart(at index: Int) {
         guard Store.authToken?.isEmpty == false else {
-            state = .authError
+            if let topVC = UIApplication.topViewController() {
+                topVC.authNil()
+            }
             return
         }
 
@@ -212,17 +200,17 @@ final class SubCatViewModel {
     /// Makes API call to add product to shopping cart
     /// - Parameter productID: The ID of the product to add to cart
     private func addShoppingAPI(productID: String) {
-        state = .loading
+        addToShopState = .loading
         
         networkService.addShoppingAPI(productID: productID)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .addShoppingFailure(error)
+                    self?.addToShopState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: AddShoppingModal) in
                 CommonUtilities.shared.showAlert(message: response.message ?? "", isSuccess: .success)
-                self?.state = .addShoppingSuccess
+                self?.addToShopState = .success(response)
             }
             .store(in: &cancellables)
     }

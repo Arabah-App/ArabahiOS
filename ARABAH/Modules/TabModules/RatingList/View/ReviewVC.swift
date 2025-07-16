@@ -117,7 +117,7 @@ class ReviewVC: UIViewController {
     // MARK: - State Handling
     
     /// Handles different states from ViewModel
-    private func handleStateChange(_ state: RatingListViewModel.State) {
+    private func handleStateChange(_ state: AppState<GetRaitingModal>) {
         switch state {
         case .idle:
             // No action needed for idle state
@@ -135,6 +135,8 @@ class ReviewVC: UIViewController {
             // Hide loading and show error on failure
             hideLoadingIndicator()
             showErrorAlert(error: error)
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
     
@@ -145,26 +147,6 @@ class ReviewVC: UIViewController {
         CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
             // Retry loading reviews when user taps retry
             self?.viewModel.raitingListAPI(productId: self?.productID ?? "")
-        }
-    }
-
-    // MARK: - Loading Indicators
-    
-    /// Shows loading spinner and disables user interaction
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-
-    /// Hides loading spinner and enables user interaction
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
     

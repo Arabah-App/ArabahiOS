@@ -208,5 +208,132 @@ final class RaiseTicketViewModelTests: XCTestCase {
         // Then
         wait(for: [expectation], timeout: 2.0)
     }
+    
+    func testStateSequenceOnSuccess() {
+        // Given
+        let mockService = MockSettingsService()
+        mockService.getTicketAPIPublisher = Just(getTicketModal(
+            success: true,
+            code: 200,
+            message: "Success",
+            body: [])
+        ).setFailureType(to: NetworkError.self)
+         .eraseToAnyPublisher()
+        
+        let viewModel = RaiseTicketViewModel(settingsServices: mockService)
+        
+        var emittedStates: [AppState<getTicketModal>] = []
+        let expectation = XCTestExpectation(description: "Should emit correct state transitions")
+        expectation.expectedFulfillmentCount = 3
+
+        // When
+        viewModel.$state
+            .sink { state in
+                emittedStates.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.getTicketAPI()
+
+        // Then
+        wait(for: [expectation], timeout: 2.0)
+        
+        XCTAssertEqual(emittedStates.count, 3)
+        XCTAssertEqual(emittedStates[0], .idle)
+        XCTAssertEqual(emittedStates[1], .loading)
+        if case .success(let result) = emittedStates[2] {
+            XCTAssertEqual(result.message, "Success")
+        } else {
+            XCTFail("Expected success state at position 2")
+        }
+    }
+
+    
+    func testTicketBodyCombineBinding() {
+        // Given
+        let mockService = MockSettingsService()
+        
+        mockService.getTicketAPIPublisher = Just(getTicketModal(
+            success: true,
+            code: 200,
+            message: "OK",
+            body: [])
+        ).setFailureType(to: NetworkError.self)
+         .eraseToAnyPublisher()
+        
+        let viewModel = RaiseTicketViewModel(settingsServices: mockService)
+        let expectation = XCTestExpectation(description: "ticketBody should emit list with one element")
+
+        // When
+        viewModel.$ticketBody
+            .dropFirst() // skip initial empty state
+            .sink { body in
+                if let body = body, body.count == 1, body.first?.id == "42" {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        viewModel.getTicketAPI()
+
+        // Then
+        wait(for: [expectation], timeout: 2.0)
+    }
+
+    func testRetryResetsStateToIdle() {
+        // Given
+        let mockService = MockSettingsService()
+        
+        // First call fails
+        mockService.getTicketAPIPublisher = Fail(error: NetworkError.serverError(message: "Initial Failure"))
+            .eraseToAnyPublisher()
+
+        let viewModel = RaiseTicketViewModel(settingsServices: mockService)
+        
+        let failureExpectation = XCTestExpectation(description: "Initial call should fail")
+        let idleExpectation = XCTestExpectation(description: "State should reset to idle before retry")
+        let successExpectation = XCTestExpectation(description: "Retry should succeed")
+
+        var stateHistory: [AppState<getTicketModal>] = []
+        
+        viewModel.$state
+            .sink { state in
+                stateHistory.append(state)
+                
+                if case .failure = state {
+                    failureExpectation.fulfill()
+
+                    // Set success response for retry
+                    mockService.getTicketAPIPublisher = Just(getTicketModal(
+                        success: true,
+                        code: 200,
+                        message: "OK",
+                        body: [])
+                    ).setFailureType(to: NetworkError.self)
+                     .eraseToAnyPublisher()
+
+                    viewModel.retryGetTicket()
+                }
+
+                if stateHistory.contains(.idle), state == .idle {
+                    idleExpectation.fulfill()
+                }
+
+                if case .success = state {
+                    successExpectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        // When
+        viewModel.getTicketAPI()
+
+        // Then
+        wait(for: [failureExpectation, idleExpectation, successExpectation], timeout: 3.0)
+    }
+
+    
+    
 }
 

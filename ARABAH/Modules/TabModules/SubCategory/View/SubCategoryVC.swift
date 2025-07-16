@@ -179,45 +179,132 @@ extension SubCategoryVC {
     
     /// Binds to ViewModel state changes
     private func bindViewModel() {
-        viewModel.$state
+        viewModel.$subCatProductState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.handleStateChange(state)
+                self?.subCatProductState(state)
             }
             .store(in: &cancellables)
+        
+        
+        viewModel.$getLatProductState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.getLatProductState(state)
+            }
+            .store(in: &cancellables)
+        
+        
+        viewModel.$getSimilarProductState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.getSimilarProductState(state)
+            }
+            .store(in: &cancellables)
+        
+        
+        viewModel.$addToShopState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.addToShopState(state)
+            }
+            .store(in: &cancellables)
+        
+        
     }
     
     /// Handles different states from ViewModel
-    private func handleStateChange(_ state: SubCatViewModel.State) {
+    private func addToShopState(_ state: AppState<AddShoppingModal>) {
+        
         switch state {
         case .idle:
             break
         case .loading:
             showLoadingIndicator()
-        case .subCatProductSuccess, .getLatestProductSuccess, .getSimilarProductSuccess:
-            // Handle successful product loading
+        case .success(_):
+            hideLoadingIndicator()
+        case .failure(let error):
+            hideLoadingIndicator()
+            CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription, retryMove: nil)
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    private func getSimilarProductState(_ state: AppState<SimilarProductModal>) {
+        
+        switch state {
+            
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
             refreshControl.endRefreshing()
             subCategoryColl.reloadData()
             setNoDataMsg()
             hideLoadingIndicator()
-        case .addShoppingSuccess:
-            // Handle successful add to cart
-            hideLoadingIndicator()
-        case .authError:
-            authNil()
-        case .subCatProductFailure(let error), .getLatestProductFailure(let error), .getSimilarProductFailure(let error):
-            // Handle product loading failures
+        case .failure(let error):
             hideLoadingIndicator()
             refreshControl.endRefreshing()
             setNoDataMsg()
             CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
                 self?.viewModel.refresh()
             }
-        case .addShoppingFailure(let error):
-            // Handle add to cart failures
+        case .validationError(_):
             hideLoadingIndicator()
-            CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription, retryMove: nil)
         }
+        
+    }
+    
+    
+    private func getLatProductState(_ state: AppState<LatestProModal>) {
+        switch state {
+            
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            refreshControl.endRefreshing()
+            subCategoryColl.reloadData()
+            setNoDataMsg()
+            hideLoadingIndicator()
+        case .failure(let error):
+            hideLoadingIndicator()
+            refreshControl.endRefreshing()
+            setNoDataMsg()
+            CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
+                self?.viewModel.refresh()
+            }
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    private func subCatProductState(_ state: AppState<SubCatProductModal>) {
+        switch state {
+            
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            hideLoadingIndicator()
+            refreshControl.endRefreshing()
+            subCategoryColl.reloadData()
+            setNoDataMsg()
+        case .failure(let error):
+            hideLoadingIndicator()
+            refreshControl.endRefreshing()
+            setNoDataMsg()
+            CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
+                self?.viewModel.refresh()
+            }
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+        
     }
     
     /// Shows no data message when collection view is empty
@@ -228,22 +315,5 @@ extension SubCategoryVC {
             subCategoryColl.backgroundView = nil
         }
     }
-    
-    /// Shows loading indicator
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: view, animated: true)
-        }
-    }
-    
-    /// Hides loading indicator
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: view, animated: true)
-        }
-    }
+
 }

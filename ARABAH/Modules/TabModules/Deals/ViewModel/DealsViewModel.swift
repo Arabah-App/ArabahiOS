@@ -11,23 +11,13 @@ import Combine
 /// ViewModel responsible for handling the Deals-related data fetching and processing logic.
 final class DealsViewModel {
     
-    // MARK: - Output
-    
-    /// Represents the different UI states during the API lifecycle.
-    enum State: Equatable {
-        case idle                          // Initial or reset state
-        case loading                       // Data is currently being fetched
-        case success                       // Data fetched successfully
-        case failure(NetworkError)         // An error occurred during fetching
-    }
-    
     // MARK: - Properties
     
     /// Holds the list of fetched deals from the API.
     @Published private(set) var dealsBody: [GetOfferDealsModalBody]? = []
     
     /// Publishes the current state of the API operation to update the UI reactively.
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<GetOfferDealsModal> = .idle
 
     /// Used to store Combine subscriptions for lifecycle management.
     private var cancellables = Set<AnyCancellable>()
@@ -66,7 +56,7 @@ final class DealsViewModel {
                 }
                 // Update data and state on successful response
                 self?.dealsBody = contentBody
-                self?.state = .success
+                self?.state = .success(response)
             }
             .store(in: &cancellables)
     }

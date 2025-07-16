@@ -5,7 +5,7 @@
 //  Created by cqlios on 09/12/24.
 
 // MARK: - LoginModal
-struct LoginModal: Codable {
+struct LoginModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -13,7 +13,7 @@ struct LoginModal: Codable {
 }
 
 // MARK: - LoginModalBody
-struct LoginModalBody: Codable {
+struct LoginModalBody: Codable, Equatable {
     var id: String?
     var role: Int?
     var name, email, password, phone: String?

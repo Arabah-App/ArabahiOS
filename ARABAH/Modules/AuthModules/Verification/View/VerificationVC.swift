@@ -88,28 +88,49 @@ class VerificationVC: UIViewController {
                 self?.handleStateChange(state)
             }
             .store(in: &cancellables)
+        
+        viewModel.$resendState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.handleResendStateChange(state)
+            }
+            .store(in: &cancellables)
+        
+    }
+    
+    private func handleResendStateChange(_ state: AppState<LoginModal>) {
+        switch state {
+            
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            handleResendSuccess()
+            hideLoadingIndicator()
+        case .failure(let error):
+            handleResendFailure(error)
+            hideLoadingIndicator()
+        case .validationError(let error):
+            showValidationErrorAlert(error)
+            hideLoadingIndicator()
+        }
     }
     
     // React to state changes from ViewModel
-    private func handleStateChange(_ state: VerificationViewModel.State) {
+    private func handleStateChange(_ state: AppState<LoginModal>) {
         switch state {
         case .idle:
             break
         case .loading:
             showLoadingIndicator()
-        case .verificationSuccess:
+        case .success(_):
             handleVerificationSuccess()
-            hideLoadingIndicator()
-        case .resendSuccess:
-            handleResendSuccess()
             hideLoadingIndicator()
         case .failure(let error):
             handleVerificationFailure(error)
             hideLoadingIndicator()
-        case .resendFailure(let error):
-            handleResendFailure(error)
-            hideLoadingIndicator()
-        case .validationFailure(let error):
+        case .validationError(let error):
             showValidationErrorAlert(error)
             hideLoadingIndicator()
         }
@@ -117,7 +138,7 @@ class VerificationVC: UIViewController {
     
     // MARK: - Actions
     @IBAction private func didTapBack(_ sender: UIButton) {
-        navigationController?.popViewController(animated: true)
+        self.navigationController?.popViewController(animated: true)
     }
     
     @IBAction private func didTapVerify(_ sender: UIButton) {
@@ -217,23 +238,6 @@ class VerificationVC: UIViewController {
         if let window = UIApplication.shared.keyWindow {
             window.rootViewController = navController
             window.makeKeyAndVisible()
-        }
-    }
-    
-    // MARK: - Loading HUD
-    private func showLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = false
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    private func hideLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = true
-            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
 }

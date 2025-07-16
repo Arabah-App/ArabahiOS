@@ -71,7 +71,7 @@ class RaiseTicketVC: UIViewController {
     }
     
     /// Responds to ViewModel state changes and updates the view accordingly
-    private func handleStateChange(_ state: RaiseTicketViewModel.State) {
+    private func handleStateChange(_ state: AppState<getTicketModal>) {
         switch state {
         case .idle:
             break // Do nothing
@@ -85,6 +85,8 @@ class RaiseTicketVC: UIViewController {
             hideLoadingIndicator()
             setNoData(count: 0)
             showErrorAlert(error: error)
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
     
@@ -95,24 +97,6 @@ class RaiseTicketVC: UIViewController {
             message: error.localizedDescription
         ) { [weak self] _ in
             self?.viewModel.retryGetTicket()
-        }
-    }
-    
-    /// Displays a loading spinner over the view
-    private func showLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = false
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides the loading spinner
-    private func hideLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = true
-            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
     

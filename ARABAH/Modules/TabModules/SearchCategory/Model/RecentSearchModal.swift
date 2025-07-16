@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - RecentSearchModal
-struct RecentSearchModal: Codable {
+struct RecentSearchModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct RecentSearchModal: Codable {
 }
 
 // MARK: - RecentSearchModalBody
-struct RecentSearchModalBody: Codable {
+struct RecentSearchModalBody: Codable, Equatable {
     let id: String?
     let userID: String?
     let name, createdAt, updatedAt: String?

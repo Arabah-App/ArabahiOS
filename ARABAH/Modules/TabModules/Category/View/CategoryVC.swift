@@ -82,7 +82,7 @@ class CategoryVC: UIViewController {
 
     /// Handles different states from ViewModel
     /// - Parameter state: Current state of the ViewModel
-    private func handleStateChange(_ state: CategoryViewModel.State) {
+    private func handleStateChange(_ state: AppState<CategoryListModal>) {
         switch state {
         case .idle:
             // No action needed in idle state
@@ -98,6 +98,8 @@ class CategoryVC: UIViewController {
             // Show error alert
             showErrorAlert(error: error)
             refreshControl.endRefreshing()
+        case .validationError(_):
+            break
         }
     }
 

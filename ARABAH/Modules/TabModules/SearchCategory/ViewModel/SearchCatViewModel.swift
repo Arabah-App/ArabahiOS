@@ -11,25 +11,14 @@ import Combine
 /// ViewModel responsible for handling the search feature, including recent searches,
 /// search results, and history deletion, in the ARABAH app.
 final class SearchCatViewModel {
-    
-    /// Represents various UI and data states for search-related operations.
-    enum State {
-        case idle
-        case loading
-        case searchCreateAPISuccess
-        case searchCategoryAPISuccess
-        case recentSearchAPISuccess
-        case historyDeleteAPISuccess
-        case searchCreateAPIFailure(NetworkError)
-        case searchCategoryAPIFailure(NetworkError)
-        case recentSearchAPIFailure(NetworkError)
-        case historyDeleteAPIFailure(NetworkError)
-    }
-    
+
     // MARK: - Published Properties
     
     /// Holds the current state of the view model.
-    @Published private(set) var state: State = .idle
+    @Published private(set) var createSearchState: AppState<CreateModal> = .idle
+    @Published private(set) var searchCatState: AppState<CategorySearchModal> = .idle
+    @Published private(set) var recentSearchState: AppState<RecentSearchModal> = .idle
+    @Published private(set) var historyDelState: AppState<SearchHistoryDeleteModal> = .idle
     
     /// List of search results from the create API.
     @Published private(set) var createModalBody: [CreateModalBody]? = []
@@ -78,20 +67,20 @@ final class SearchCatViewModel {
             clearCategory()
             return
         }
-        state = .loading
+        createSearchState = .loading
         let name = searchQuery
         networkService.performSearch(name: name)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .searchCreateAPIFailure(error)
+                    self?.createSearchState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: CreateModal) in
                 guard let contentBody = response.body else {
-                    self?.state = .searchCreateAPIFailure(.invalidResponse)
+                    self?.createSearchState = .failure(.invalidResponse)
                     return
                 }
-                self?.state = .searchCreateAPISuccess
+                self?.createSearchState = .success(response)
                 self?.createModalBody = contentBody
                 self?.fetchSearchResults()
             }
@@ -100,58 +89,58 @@ final class SearchCatViewModel {
 
     /// Fetches the search results (products and categories) based on the current query and location.
     func fetchSearchResults() {
-        state = .loading
+        searchCatState = .loading
         
         networkService.fetchSearchResults(searchQuery: searchQuery, longitude: longitude, latitude: latitude)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .searchCategoryAPIFailure(error)
+                    self?.searchCatState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: CategorySearchModal) in
                 guard let contentBody = response.body else {
-                    self?.state = .searchCategoryAPIFailure(.invalidResponse)
+                    self?.searchCatState = .failure(.invalidResponse)
                     return
                 }
                 self?.product = contentBody.products ?? []
                 self?.category = contentBody.category ?? []
-                self?.state = .searchCategoryAPISuccess
+                self?.searchCatState = .success(response)
             }
             .store(in: &cancellables)
     }
     
     /// Calls the recent search API to get the list of recent search items.
     func recentSearchAPI() {
-        state = .loading
+        recentSearchState = .loading
         networkService.recentSearchAPI()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .recentSearchAPIFailure(error)
+                    self?.recentSearchState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: RecentSearchModal) in
                 guard let contentBody = response.body else {
-                    self?.state = .recentSearchAPIFailure(.invalidResponse)
+                    self?.recentSearchState = .failure(.invalidResponse)
                     return
                 }
                 self?.recentModel = contentBody
-                self?.state = .recentSearchAPISuccess
+                self?.recentSearchState = .success(response)
             }
             .store(in: &cancellables)
     }
     
     /// Deletes a specific recent search history entry using its ID.
     func historyDeleteAPI(with id: String) {
-        state = .loading
+        historyDelState = .loading
         deleteHistoryID = id
         networkService.historyDeleteAPI(with: id)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .historyDeleteAPIFailure(error)
+                    self?.historyDelState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: SearchHistoryDeleteModal) in
-                self?.state = .historyDeleteAPISuccess
+                self?.historyDelState = .success(response)
             }
             .store(in: &cancellables)
     }

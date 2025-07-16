@@ -11,27 +11,17 @@ import Combine
 /// ViewModel responsible for validating and sending product reports to the backend API.
 final class ReportViewModel {
 
-    // MARK: - Input & Output
+    // MARK: - Input
 
     /// Struct representing the input required for reporting a product.
     struct Input {
         let productID: String       // Unique identifier of the product being reported.
         let message: String         // User-provided message describing the issue.
     }
-    
-    /// Enum representing different states of the ViewModel during the report API flow.
-    enum State: Equatable {
-        case idle                               // Initial/default state.
-        case loading                            // API call is in progress.
-        case success                            // API call was successful.
-        case validateError(NetworkError)        // Input validation failed with specific error.
-        case failure(NetworkError)              // API call failed with error.
-    }
-    
     // MARK: - Properties
 
     /// Published property to expose current state changes to the ViewController.
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<ReportModal> = .idle
 
     /// Container to hold Combine subscriptions.
     private var cancellables = Set<AnyCancellable>()
@@ -71,9 +61,9 @@ final class ReportViewModel {
                 if case .failure(let error) = completion {
                     self?.state = .failure(error)
                 }
-            } receiveValue: { [weak self] (_: ReportModal) in
+            } receiveValue: { [weak self] (response: ReportModal) in
                 // Set state to success when API call completes with data.
-                self?.state = .success
+                self?.state = .success(response)
             }
             .store(in: &cancellables) // Store the subscription to manage lifecycle.
     }
@@ -84,12 +74,13 @@ final class ReportViewModel {
     /// - Parameter description: The trimmed message string to validate.
     /// - Returns: A boolean indicating if the input is valid.
     private func validateInputs(description: String) -> Bool {
-        // Check if message is empty.
-        if description.isEmpty {
-            // Set validation error state with a descriptive error.
-            state = .validateError(.badRequest(message: RegexMessages.invalidEmptyDescription))
+        let validator = Validator.validateReport(description)
+        switch validator {
+        case .success:
+            return true
+        case .failure(let error):
+            state = .validationError(.badRequest(message: error.localizedDescription))
             return false
         }
-        return true
     }
 }

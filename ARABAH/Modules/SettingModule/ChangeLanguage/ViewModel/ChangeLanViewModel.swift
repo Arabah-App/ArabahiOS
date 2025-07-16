@@ -10,19 +10,9 @@ import Combine
 
 class ChangeLanViewModel: NSObject {
     
-    // MARK: - Output Enum
-    
-    /// Represents different UI states for the language change process
-    enum State {
-        case idle                         // No operation in progress
-        case loading                      // API request in progress
-        case success                      // Language change was successful
-        case failure(NetworkError)        // API call failed with error
-    }
-    
     // MARK: - Properties
     
-    @Published private(set) var state: State = .idle        // Observable state property for view binding
+    @Published private(set) var state: AppState<LoginModal> = .idle        // Observable state property for view binding
     private var cancellables = Set<AnyCancellable>()        // Stores Combine subscriptions
     private let settingsServices: SettingsServicesProtocol  // Protocol for API service abstraction
      var retryParams: String?                        // Stores last language used for retry
@@ -54,8 +44,8 @@ class ChangeLanViewModel: NSObject {
                 if case .failure(let error) = completion {
                     self?.state = .failure(error)
                 }
-            } receiveValue: { [weak self] (_: LoginModal) in
-                self?.state = .success
+            } receiveValue: { [weak self] (response: LoginModal) in
+                self?.state = .success(response)
             }
             .store(in: &cancellables)
     }
@@ -73,4 +63,9 @@ class ChangeLanViewModel: NSObject {
             self.changeLanguageAPI(with: languageType)
         }
     }
+    
+    
+    
+    
+    
 }

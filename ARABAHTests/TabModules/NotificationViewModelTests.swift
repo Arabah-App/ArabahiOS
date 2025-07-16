@@ -43,10 +43,10 @@ final class NotificationViewModelTests: XCTestCase {
         let expectation = expectation(description: "Get notification list success")
         
         // When
-        viewModel.$state
+        viewModel.$listState
             .dropFirst()
             .sink { state in
-                if case .getNotificationListSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -70,10 +70,10 @@ final class NotificationViewModelTests: XCTestCase {
         
         let expectation = expectation(description: "Get notification list failure")
         
-        viewModel.$state
+        viewModel.$listState
             .dropFirst()
             .sink { state in
-                if case .getNotificationListFailure(let error) = state {
+                if case .failure(let error) = state {
                     XCTAssertEqual(error.localizedDescription, NetworkError.networkError("No internet").localizedDescription)
                     expectation.fulfill()
                 }
@@ -99,10 +99,10 @@ final class NotificationViewModelTests: XCTestCase {
         
         let expectation = expectation(description: "Notification delete success")
         
-        viewModel.$state
+        viewModel.$listDeleteState
             .dropFirst()
             .sink { state in
-                if case .deleteSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -124,10 +124,10 @@ final class NotificationViewModelTests: XCTestCase {
         
         let expectation = expectation(description: "Notification delete failure")
         
-        viewModel.$state
+        viewModel.$listDeleteState
             .dropFirst()
             .sink { state in
-                if case .deleteFailure(let error) = state {
+                if case .failure(let error) = state {
                     XCTAssertEqual(error.localizedDescription, NetworkError.badRequest(message: "Delete failed").localizedDescription)
                     expectation.fulfill()
                 }
@@ -150,7 +150,7 @@ final class NotificationViewModelTests: XCTestCase {
         viewModel.getNotificationList()
         
         // Set up a success response
-    
+        
         let modal = GetNotificationModal(success: true, code: 200, message: "ok", body: nil)
         mockService.getNotificationListPublisher = Just(modal)
             .setFailureType(to: NetworkError.self)
@@ -158,10 +158,10 @@ final class NotificationViewModelTests: XCTestCase {
         
         let expectation = expectation(description: "Retry get notification works")
         
-        viewModel.$state
+        viewModel.$listState
             .dropFirst(2) // skip loading + failure
             .sink { state in
-                if case .getNotificationListSuccess = state {
+                if case .success(let body) = state {
                     expectation.fulfill()
                 }
             }
@@ -174,5 +174,81 @@ final class NotificationViewModelTests: XCTestCase {
         wait(for: [expectation], timeout: 2)
         XCTAssertEqual(viewModel.count(), 1)
     }
+    
+    func testInitialListStateIsIdle() {
+        XCTAssertEqual(viewModel.listState, .idle)
+    }
+    
+    func testInitialDeleteStateIsIdle() {
+        XCTAssertEqual(viewModel.listDeleteState, .idle)
+    }
+    
+    func testIsEmptyWhenNoData() {
+        viewModel.clearList()
+        XCTAssertTrue(viewModel.isEmpty)
+    }
+    
+    
+    func testStateTransitionsFromLoadingToSuccess() {
+        let modal = GetNotificationModal(success: true, code: 200, message: "ok", body: [])
+        mockService.getNotificationListPublisher = Just(modal)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+        
+        var states: [AppState<GetNotificationModal>] = []
+        
+        let expectation = expectation(description: "Track state changes")
+        
+        viewModel.$listState
+            .sink { state in
+                states.append(state)
+                if states.count == 2 { // loading → success
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        viewModel.getNotificationList()
+        
+        wait(for: [expectation], timeout: 2)
+        XCTAssertEqual(states.count, 2)
+        XCTAssertEqual(states[0], .loading)
+        if case .success(let modal) = states[1] {
+            XCTAssertEqual(modal.message, "ok")
+        } else {
+            XCTFail("Expected success state")
+        }
+    }
+    
+    func testStateTransitionsFromLoadingToFailure() {
+        mockService.getNotificationListPublisher = Fail(error: NetworkError.serverError(message: "Fail"))
+            .eraseToAnyPublisher()
+        
+        var states: [AppState<GetNotificationModal>] = []
+        
+        let expectation = expectation(description: "Track failure state transitions")
+        
+        viewModel.$listState
+            .sink { state in
+                states.append(state)
+                if states.count == 2 { // loading → failure
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+        
+        viewModel.getNotificationList()
+        
+        wait(for: [expectation], timeout: 2)
+        XCTAssertEqual(states[0], .loading)
+        if case .failure(let error) = states[1] {
+            XCTAssertEqual(error.localizedDescription, NetworkError.serverError(message: "Fail").localizedDescription)
+        } else {
+            XCTFail("Expected failure state")
+        }
+    }
+    
+    
+    
 }
 

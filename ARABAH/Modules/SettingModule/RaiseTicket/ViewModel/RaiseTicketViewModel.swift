@@ -11,20 +11,10 @@ import Combine
 /// ViewModel responsible for managing support ticket fetching logic
 final class RaiseTicketViewModel {
     
-    // MARK: - State Enum
-    
-    /// Represents the current state of the ticket API request
-    enum State {
-        case idle                  // Default state — no action
-        case loading               // Indicates API call is in progress
-        case success               // Tickets fetched successfully
-        case failure(NetworkError) // Tickets failed to fetch due to error
-    }
-    
     // MARK: - Properties
     
     /// Published property to notify observers about state changes
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<getTicketModal> = .idle
     
     /// Holds the list of support tickets fetched from the server
     @Published private(set) var ticketBody: [getTicketModalBody]? = []
@@ -66,7 +56,7 @@ final class RaiseTicketViewModel {
                 
                 // Store the ticket list and mark success
                 self?.ticketBody = contentBody
-                self?.state = .success
+                self?.state = .success(response)
             }
             .store(in: &cancellables)
     }

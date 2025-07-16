@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - ReportModal
-struct ReportModal: Codable {
+struct ReportModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct ReportModal: Codable {
 }
 
 // MARK: - ReportModalBody
-struct ReportModalBody: Codable {
+struct ReportModalBody: Codable, Equatable {
     let userID, productID, message: String?
     let deleted: Bool?
     let id, createdAt, updatedAt: String?

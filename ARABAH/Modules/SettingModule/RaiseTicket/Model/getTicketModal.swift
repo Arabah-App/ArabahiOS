@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - getTicketModal
-struct getTicketModal: Codable {
+struct getTicketModal: Codable, Equatable {
     var success: Bool?
     var code: Int?
     var message: String?
@@ -16,7 +16,7 @@ struct getTicketModal: Codable {
 }
 
 // MARK: - getTicketModalBody
-struct getTicketModalBody: Codable {
+struct getTicketModalBody: Codable, Equatable {
     var id, userID, title, TitleArabic, description, DescriptionArabic: String?
     var deleted: Bool?
     var createdAt, updatedAt: String?

@@ -11,20 +11,11 @@ import Combine
 /// ViewModel responsible for handling login logic via phone number and country code.
 final class LoginViewModel {
     
-    // MARK: -  Output
-    /// Enum representing various possible UI states during login flow.
-    enum State {
-        case idle                         // Default state, no operation
-        case loading                      // Login in progress
-        case success(LoginModal)         // Login succeeded with response
-        case failure(NetworkError)       // Login failed with error
-        case validatefailure(NetworkError)       // Validatation failed with error
-    }
-    
+
     // MARK: - Properties
     
     /// Published state observable by UI
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<LoginModal> = .idle
     
     private var cancellables = Set<AnyCancellable>()              // To hold Combine subscriptions
     private let authServices: AuthServicesProtocol                // API service for login
@@ -81,24 +72,20 @@ final class LoginViewModel {
     
     /// Validates the login input values before making the API request.
     private func validateInputs(countryCode: String, phoneNumber: String) -> Bool {
-        // Check if country code is present
-        guard !countryCode.isEmpty else {
-            state = .validatefailure(.validationError(RegexMessages.invalidCountryCode))
-            return false
-        }
+        let countryCodeValidation = Validator.validateCountryCode(countryCode)
+        let phoneValidation = Validator.validatePhoneNumber(phoneNumber)
         
-        // Check if phone number is present
-        guard !phoneNumber.isEmpty else {
-            state = .validatefailure(.validationError(RegexMessages.emptyPhoneNumber))
+        switch (countryCodeValidation, phoneValidation) {
+        case (.failure(let error), _):
+             state = .validationError(.validationError(error.localizedDescription))
             return false
-        }
-        
-        // Validate minimum phone number length
-        guard phoneNumber.count >= 8 else {
-            state = .validatefailure(.validationError(RegexMessages.invalidPhoneNumber))
+        case (_, .failure(let error)):
+             state = .validationError(.validationError(error.localizedDescription))
             return false
+        case (.success, .success):
+            return true
         }
-        
-        return true
     }
 }
+
+

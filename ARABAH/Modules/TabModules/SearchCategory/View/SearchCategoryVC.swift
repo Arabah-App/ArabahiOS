@@ -112,45 +112,112 @@ class SearchCategoryVC: UIViewController, UITextFieldDelegate {
     
     /// Sets up binding to ViewModel state changes
     private func bindViewModel() {
-        viewModel.$state
+        viewModel.$createSearchState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.handleStateChange(state)
+                self?.createSearchState(state)
             }
             .store(in: &cancellables)
+        
+        viewModel.$searchCatState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.searchCatState(state)
+            }
+            .store(in: &cancellables)
+        
+        viewModel.$recentSearchState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.recentSearchState(state)
+            }
+            .store(in: &cancellables)
+        
+        viewModel.$historyDelState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.historyDelState(state)
+            }
+            .store(in: &cancellables)
+        
     }
 
     /// Handles different states from ViewModel
-    private func handleStateChange(_ state: SearchCatViewModel.State) {
+   
+    private func historyDelState(_ state: AppState<SearchHistoryDeleteModal>) {
         switch state {
-        case .idle: break
-        case .loading: showLoadingIndicator()
-        case .searchCreateAPISuccess: hideLoadingIndicator()
-        case .searchCategoryAPISuccess:
-            self.viewRecentSearch.isHidden = true
+            
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
             hideLoadingIndicator()
-            updateSearchResultUI()
-        case .recentSearchAPISuccess:
+            viewModel.recentSearchAPI()
+        case .failure(let error):
+            hideLoadingIndicator()
+            showRetry(error: error,retry: viewModel.retryDeleteHistory )
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    private func recentSearchState(_ state: AppState<RecentSearchModal>) {
+        switch state {
+            
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
             hideLoadingIndicator()
             setNoData(count: viewModel.recentModel?.count ?? 0)
             recentSearchTbl.reloadData()
-        case .historyDeleteAPISuccess:
-            hideLoadingIndicator()
-            viewModel.recentSearchAPI()
-        case .searchCreateAPIFailure(let err):
-            hideLoadingIndicator()
-            showRetry(error: err,retry: viewModel.performSearch)
-        case .searchCategoryAPIFailure(let err):
-            hideLoadingIndicator()
-            showRetry(error: err, retry: viewModel.fetchSearchResults)
-        case .recentSearchAPIFailure(let err):
+        case .failure(let error):
             hideLoadingIndicator()
             setNoData(count: 0)
             recentSearchTbl.reloadData()
-            showRetry(error: err, retry: viewModel.recentSearchAPI)
-        case .historyDeleteAPIFailure(let err):
+            showRetry(error: error, retry: viewModel.recentSearchAPI)
+        case .validationError(_):
             hideLoadingIndicator()
-            showRetry(error: err,retry: viewModel.retryDeleteHistory )
+        }
+    }
+    
+    
+    private func searchCatState(_ state: AppState<CategorySearchModal>) {
+        switch state {
+            
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            self.viewRecentSearch.isHidden = true
+            hideLoadingIndicator()
+            updateSearchResultUI()
+        case .failure(let error):
+            hideLoadingIndicator()
+            showRetry(error: error, retry: viewModel.fetchSearchResults)
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    
+    private func createSearchState(_ state: AppState<CreateModal>) {
+        switch state {
+            
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            hideLoadingIndicator()
+        case .failure(let error):
+            hideLoadingIndicator()
+            showRetry(error: error,retry: viewModel.performSearch)
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
 
@@ -159,24 +226,6 @@ class SearchCategoryVC: UIViewController, UITextFieldDelegate {
         CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
             guard let _ = self else { return }
             retry?()
-        }
-    }
-
-    /// Shows loading indicator
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-
-    /// Hides loading indicator
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
 

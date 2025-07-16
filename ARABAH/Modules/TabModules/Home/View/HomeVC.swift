@@ -138,7 +138,7 @@ class HomeVC: UIViewController {
     // MARK: - State Management
     
     /// Updates UI based on view model's current state
-    private func handleState(_ state: HomeViewModel.State) {
+    private func handleState(_ state: AppState<HomeModal>) {
         switch state {
         case .idle:
             break // Initial state, no action needed
@@ -165,6 +165,9 @@ class HomeVC: UIViewController {
             CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
                 self?.viewModel.retryHomeAPI()
             }
+        case .validationError(_):
+            isLoading = false
+            homeTbl.reloadData()
         }
     }
 

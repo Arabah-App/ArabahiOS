@@ -984,6 +984,9 @@
     "Permission Denied" : {
 
     },
+    "Phone number can only contain digits" : {
+
+    },
     "Photo Library access is denied. Please enable it in settings." : {
 
     },

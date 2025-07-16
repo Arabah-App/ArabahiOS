@@ -77,6 +77,7 @@ enum RegexMessages {
     static let emptyEmail = NSLocalizedString("Please enter email", comment: "")
     static let invalidEmail = NSLocalizedString("Please enter valid email", comment: "")
     static let invalidPhoneNumber = NSLocalizedString("Please enter valid phone number", comment: "")
+    static let invalidPhoneNumberFormat = NSLocalizedString("Phone number can only contain digits", comment: "")
     static let emptyMessage = NSLocalizedString("Please enter message", comment: "")
     static let invalidEmptyDescription = NSLocalizedString("Please enter description", comment: "")
     static let emptytittle = NSLocalizedString("Please enter title", comment: "")

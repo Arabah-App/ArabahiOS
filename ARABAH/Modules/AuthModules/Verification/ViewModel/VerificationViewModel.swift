@@ -11,23 +11,11 @@ import Combine
 /// ViewModel responsible for handling OTP verification and resend logic.
 final class VerificationViewModel {
     
-    // MARK: - Output
-    
-    /// Defines the different states the ViewModel can emit to the View.
-    enum State {
-        case idle                        // Initial or reset state
-        case loading                     // Shows loading indicator during API call
-        case verificationSuccess         // OTP verified successfully
-        case resendSuccess               // OTP resend was successful
-        case failure(NetworkError)      // Verification failed
-        case validationFailure(NetworkError)      // Validation failed
-        case resendFailure(NetworkError) // Resend failed
-    }
-    
     // MARK: - Properties
     
     /// Publisher for exposing current state changes to the View
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<LoginModal> = .idle
+    @Published private(set) var resendState: AppState<LoginModal> = .idle
     
     /// Holds Combine subscriptions
     private var cancellables = Set<AnyCancellable>()
@@ -75,7 +63,7 @@ final class VerificationViewModel {
                 // Store user session on success
                 Store.authToken = response.body?.token
                 Store.userDetails = response
-                self?.state = .verificationSuccess
+                self?.state = .success(response)
             }
             .store(in: &cancellables)
     }
@@ -99,11 +87,11 @@ final class VerificationViewModel {
             .sink { [weak self] completion in
                 // Handle resend failure
                 if case .failure(let error) = completion {
-                    self?.state = .resendFailure(error)
+                    self?.resendState = .failure(error)
                 }
-            } receiveValue: { [weak self] (_: LoginModal) in
+            } receiveValue: { [weak self] (response: LoginModal) in
                 // On success, update state
-                self?.state = .resendSuccess
+                self?.resendState = .success(response)
             }
             .store(in: &cancellables)
     }
@@ -120,11 +108,14 @@ final class VerificationViewModel {
     
     /// Basic validation for OTP input
     private func validateInputs(otp: String) -> Bool {
-        if otp.count < 4 {
-            state = .validationFailure(.validationError(RegexMessages.enterOTP))
+        let otpValidation = Validator.validateOTP(otp)
+        switch otpValidation {
+        case .success:
+            return true
+        case .failure(let error):
+            state = .validationError(.validationError(error.localizedDescription))
             return false
         }
-        return true
     }
 }
 

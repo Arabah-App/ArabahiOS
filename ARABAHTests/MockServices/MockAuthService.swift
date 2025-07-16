@@ -13,12 +13,11 @@ import UIKit
 
 final class MockAuthService: AuthServicesProtocol {
     
-    var loginUserPublisher: AnyPublisher<LoginModal, NetworkError>?
+    var loginUserPublisher: AnyPublisher<LoginModal, NetworkError> = Empty().eraseToAnyPublisher()
     
     func loginUser(countryCode: String, phoneNumber: String) -> AnyPublisher<LoginModal, NetworkError> {
-            return loginUserPublisher ?? Fail(error: .networkError("Mock not configured")).eraseToAnyPublisher()
-        }
-
+        return loginUserPublisher
+    }
     
     var verifyOTPPublisher: AnyPublisher<LoginModal, NetworkError>?
     func verifyOTP(otp: String, phoneNumberWithCode: String) -> AnyPublisher<ARABAH.LoginModal, ARABAH.NetworkError> {

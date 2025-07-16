@@ -184,7 +184,7 @@ final class ChangeLanViewModelTests: XCTestCase {
             XCTestExpectation(description: "Should transition to success")
         ]
         
-        var stateHistory: [ChangeLanViewModel.State] = []
+        var stateHistory: [AppState<LoginModal>] = []
         
         // When
         viewModel.$state
@@ -210,4 +210,44 @@ final class ChangeLanViewModelTests: XCTestCase {
         // Then
         wait(for: expectations, timeout: 2.0)
     }
+    
+    func testCombineBindingOrderOnSuccess() {
+        let mockService = MockSettingsService()
+        
+        let successResponse = LoginModal(
+            success: true,
+            code: 200,
+            message: "OK",
+            body: nil
+        )
+        
+        mockService.changeLanguageAPIPublisher = Just(successResponse)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+        
+        let viewModel = ChangeLanViewModel(settingsServices: mockService)
+        
+        var states: [AppState<LoginModal>] = []
+        let expectation = XCTestExpectation(description: "Expect 3 state changes")
+        expectation.expectedFulfillmentCount = 3
+
+        viewModel.$state
+            .sink { state in
+                states.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.changeLanguageAPI(with: "en")
+
+        wait(for: [expectation], timeout: 2.0)
+
+        XCTAssertEqual(states.count, 3)
+        XCTAssertEqual(states[0], .idle)
+        XCTAssertEqual(states[1], .loading)
+        XCTAssertEqual(states[2], .success(successResponse))
+    }
+
+    
+    
 }

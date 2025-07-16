@@ -23,7 +23,7 @@ struct CommentModal: Codable {
 import Foundation
 
 // MARK: - NewCommonString
-struct NewCommonString: Codable {
+struct NewCommonString: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -31,11 +31,11 @@ struct NewCommonString: Codable {
 }
 
 // MARK: - NewCommonStringBody
-struct NewCommonStringBody: Codable {
+struct NewCommonStringBody: Codable, Equatable {
 }
 
 // MARK: - shoppinglistDeleteModal
-struct shoppinglistDeleteModal: Codable {
+struct shoppinglistDeleteModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -43,7 +43,7 @@ struct shoppinglistDeleteModal: Codable {
 }
 
 // MARK: - shoppinglistDeleteModalBody
-struct shoppinglistDeleteModalBody: Codable {
+struct shoppinglistDeleteModalBody: Codable, Equatable {
     let id, userID, productID: String?
     let deleted: Bool?
     let createdAt, updatedAt: String?

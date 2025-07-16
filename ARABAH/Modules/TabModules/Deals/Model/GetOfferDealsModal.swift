@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - GetOfferDealsModal
-struct GetOfferDealsModal: Codable {
+struct GetOfferDealsModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct GetOfferDealsModal: Codable {
 }
 
 // MARK: - GetOfferDealsModalBody
-struct GetOfferDealsModalBody: Codable {
+struct GetOfferDealsModalBody: Codable, Equatable {
     let id, image: String?
     let deleted: Bool?
     let createdAt, updatedAt: String?
@@ -58,7 +58,7 @@ struct GetOfferDealsModalBody: Codable {
 }
 
 // MARK: - StoreID
-struct StoreID: Codable {
+struct StoreID: Codable, Equatable {
     let id, name, image, createdAt: String?
     let updatedAt: String?
     let v: Int?

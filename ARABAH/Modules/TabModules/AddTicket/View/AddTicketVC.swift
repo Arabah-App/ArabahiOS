@@ -83,7 +83,7 @@ class AddTicketVC: UIViewController, UITextViewDelegate {
     }
 
     /// Handles state changes from the ViewModel
-    private func handleStateChange(_ state: AddTicketViewModel.State) {
+    private func handleStateChange(_ state: AppState<ReportModal>) {
         switch state {
         case .idle:
             break
@@ -95,30 +95,11 @@ class AddTicketVC: UIViewController, UITextViewDelegate {
         case .failure(let error):
             hideLoadingIndicator()
             showErrorAlert(error: error)
-        case .validateError(let error):
+        case .validationError(let error):
             showErrorAlertBanner(error: error)
         }
     }
-    
-    // MARK: - INDICATORS
-    
-    /// Shows loading indicator
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides loading indicator
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
-        }
-    }
+
     
     // MARK: - ALERTS
     

@@ -60,10 +60,18 @@ class FavProductVC: UIViewController {
     /// Sets up bindings to ViewModel properties
     private func bindViewModel() {
         // Handle state changes from ViewModel
-        viewModel.$state
+        viewModel.$likeDislikeState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
-                self?.handleStateChange(state)
+                self?.handleLikeDislikeState(state)
+            }
+            .store(in: &cancellables)
+        
+        
+        viewModel.$likeListState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.handleListState(state)
             }
             .store(in: &cancellables)
         
@@ -89,36 +97,36 @@ class FavProductVC: UIViewController {
     }
     
     // MARK: - State Handling
-    
-    /// Handles different states from ViewModel
-    private func handleStateChange(_ state: FavViewModel.State) {
+    private func handleLikeDislikeState(_ state: AppState<LikeModal>) {
         switch state {
         case .idle:
-            // No action needed for idle state
             break
-            
         case .loading:
-            // Show loading indicator
             showLoadingIndicator()
-            
-        case .likeDisLikeSuccess:
-            // Handle successful like/dislike action
+        case .success(_):
             hideLoadingIndicator()
             CommonUtilities.shared.showAlert(message: RegexMessages.productDislike, isSuccess: .success)
-            
-        case .likedListSuccess:
-            // Handle successful favorite list fetch
-            hideLoadingIndicator()
-            
-        case .likeDisLikeFailure(let error):
-            // Handle like/dislike failure
+        case .failure(let error):
             hideLoadingIndicator()
             showDislikeErrorAlert(error)
-            
-        case .likedListFailure(let error):
-            // Handle favorite list fetch failure
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    private func handleListState(_ state: AppState<LikeProductModal>) {
+        switch state {
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
+            hideLoadingIndicator()
+        case .failure(let error):
             hideLoadingIndicator()
             showFavListErrorAlert(error)
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
     
@@ -135,26 +143,6 @@ class FavProductVC: UIViewController {
     private func showFavListErrorAlert(_ error: NetworkError) {
         CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
             self?.viewModel.getProductfavList()
-        }
-    }
-    
-    // MARK: - Loading Indicators
-    
-    /// Shows loading spinner and disables user interaction
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: view, animated: true)
-        }
-    }
-    
-    /// Hides loading spinner and enables user interaction
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: view, animated: true)
         }
     }
     

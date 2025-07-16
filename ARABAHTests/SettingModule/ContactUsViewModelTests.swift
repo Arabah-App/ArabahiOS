@@ -97,7 +97,7 @@ final class ContactUsViewModelTests: XCTestCase {
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if case .validationFailure(let error) = state {
+                if case .validationError(let error) = state {
                     XCTAssertEqual(error.localizedDescription, RegexMessages.emptyName)
                     expectation.fulfill()
                 }
@@ -124,7 +124,7 @@ final class ContactUsViewModelTests: XCTestCase {
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if case .validationFailure(let error) = state {
+                if case .validationError(let error) = state {
                     XCTAssertEqual(error.localizedDescription, RegexMessages.emptyEmail)
                     expectation.fulfill()
                 }
@@ -151,7 +151,7 @@ final class ContactUsViewModelTests: XCTestCase {
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if case .validationFailure(let error) = state {
+                if case .validationError(let error) = state {
                     XCTAssertEqual(error.localizedDescription, RegexMessages.invalidEmail)
                     expectation.fulfill()
                 }
@@ -178,7 +178,7 @@ final class ContactUsViewModelTests: XCTestCase {
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if case .validationFailure(let error) = state {
+                if case .validationError(let error) = state {
                     XCTAssertEqual(error.localizedDescription, RegexMessages.emptyMessage)
                     expectation.fulfill()
                 }
@@ -314,7 +314,7 @@ final class ContactUsViewModelTests: XCTestCase {
             XCTestExpectation(description: "Should transition to success")
         ]
         
-        var stateHistory: [ContactUsViewModel.State] = []
+        var stateHistory: [AppState<ContactUsModal>] = []
         
         // When
         viewModel.$state
@@ -344,4 +344,37 @@ final class ContactUsViewModelTests: XCTestCase {
         // Then
         wait(for: expectations, timeout: 2.0)
     }
+    
+    func testContactUsCombineStateEmissionOrder() {
+        let mockService = MockSettingsService()
+        let expected = ContactUsModal(success: true, code: 200, message: "Delivered", body: nil)
+
+        mockService.contactUsAPIPublisher = Just(expected)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+        
+        let viewModel = ContactUsViewModel(settingsServices: mockService)
+        var emittedStates: [AppState<ContactUsModal>] = []
+        
+        let expectation = XCTestExpectation(description: "State should emit in order")
+        expectation.expectedFulfillmentCount = 3
+
+        viewModel.$state
+            .sink { state in
+                emittedStates.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.contactUsAPI(name: "A", email: "a@b.com", message: "Hi")
+
+        wait(for: [expectation], timeout: 2.0)
+
+        XCTAssertEqual(emittedStates.count, 3)
+        XCTAssertEqual(emittedStates[0], .idle)
+        XCTAssertEqual(emittedStates[1], .loading)
+        XCTAssertEqual(emittedStates[2], .success(expected))
+    }
+
+    
 }

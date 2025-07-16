@@ -67,12 +67,36 @@ class ProfileVC: UIViewController {
     
     // Bind ViewModel state changes to UI handling
     private func bindViewModel() {
-        viewModel.$state
+        viewModel.$profileState
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 self?.handleStateChange(state)
             }
             .store(in: &cancellables)
+        
+        
+        viewModel.$updateNotiState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.handleNotiState(state)
+            }
+            .store(in: &cancellables)
+        
+        
+        viewModel.$deleteAccState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.handleDeleteAccState(state)
+            }
+            .store(in: &cancellables)
+        
+        viewModel.$logoutState
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.handleLogoutState(state)
+            }
+            .store(in: &cancellables)
+        
     }
     
     // MARK: - Actions
@@ -83,40 +107,77 @@ class ProfileVC: UIViewController {
     }
     
     // MARK: - State Handling
-    
     // Handle ViewModel state updates
-    private func handleStateChange(_ state: ProfileViewModel.State) {
+    private func handleStateChange(_ state: AppState<LoginModalBody>) {
         switch state {
         case .idle:
-            print("idle state")
             break
         case .loading:
             showLoadingIndicator()
-        case .profileLoaded(let profile):
+        case .success(let value):
+            updateUI(with: value)
             hideLoadingIndicator()
-            updateUI(with: profile)
-        case .notificationUpdated:
+        case .failure(_):
+            hideLoadingIndicator()
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    // Handle ViewModel state updates
+    private func handleNotiState(_ state: AppState<LoginModal>) {
+        switch state {
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
             hideLoadingIndicator()
             showNotificationUpdateSuccess()
             tblVw.reloadData()
-        case .accountDeleted:
+        case .failure(let error):
+            hideLoadingIndicator()
+            handleUpdateStatusError(error)
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    // Handle ViewModel state updates
+    private func handleDeleteAccState(_ state: AppState<LoginModal>) {
+        switch state {
+            
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
             hideLoadingIndicator()
             navigateToLogin()
-        case .loggedOut:
+        case .failure(let error):
+            hideLoadingIndicator()
+            handleDeleteAccountError(error)
+        case .validationError(_):
+            hideLoadingIndicator()
+        }
+    }
+    
+    // Handle ViewModel state updates
+    private func handleLogoutState(_ state: AppState<LoginModal>) {
+        switch state {
+        case .idle:
+            break
+        case .loading:
+            showLoadingIndicator()
+        case .success(_):
             hideLoadingIndicator()
             CommonUtilities.shared.showAlert(message: RegexMessages.userLogout, isSuccess: .success)
             navigateToLogin()
-        case .loadProfilefailure:
-            hideLoadingIndicator()
-        case .notiUpdatefailure(let error):
-            hideLoadingIndicator()
-            handleUpdateStatusError(error)
-        case .accDeletefailure(let error):
-            hideLoadingIndicator()
-            handleDeleteAccountError(error)
-        case .logOutfailure(let error):
+        case .failure(let error):
             hideLoadingIndicator()
             handleLogoutError(error)
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
     
@@ -200,20 +261,6 @@ class ProfileVC: UIViewController {
     private func handleUpdateStatusError(_ error: NetworkError) {
         CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] (_) in
             self?.viewModel.retryUpdateNotiStatus()
-        }
-    }
-    
-    private func showLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    private func hideLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
 }

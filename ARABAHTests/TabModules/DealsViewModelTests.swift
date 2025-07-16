@@ -31,9 +31,8 @@ final class DealsViewModelTests: XCTestCase {
 
     func testGetOfferDealsAPISuccess_shouldUpdateDealsAndSetSuccessState() {
         // Given
-
-
-        let response = GetOfferDealsModal(success: true, code: 200, message: "OK", body: nil)
+        
+        let response = GetOfferDealsModal(success: true, code: 200, message: "OK", body: [])
 
         mockService.getOfferDealsAPIPublisher = Just(response)
             .setFailureType(to: NetworkError.self)
@@ -42,9 +41,10 @@ final class DealsViewModelTests: XCTestCase {
         let expectation = expectation(description: "State becomes success")
 
         viewModel.$state
-            .dropFirst() // skip .idle
+            .dropFirst()
             .sink { state in
-                if case .success = state {
+                if case .success(let modal) = state {
+                    XCTAssertEqual(modal.message, "OK")
                     expectation.fulfill()
                 }
             }
@@ -58,6 +58,7 @@ final class DealsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.dealsBody?.count, 1)
         XCTAssertEqual(viewModel.dealsBody?.first?.decription, "Big Sale")
     }
+
 
     func testGetOfferDealsAPIFailure_shouldSetFailureState() {
         // Given
@@ -102,4 +103,98 @@ final class DealsViewModelTests: XCTestCase {
         XCTAssertTrue(dealURL.contains("deal.jpg"))
         XCTAssertTrue(storeURL.contains("store.jpg"))
     }
+    
+    func testStateTransitions_loadingToSuccess() {
+        let response = GetOfferDealsModal(success: true, code: 200, message: "Loaded", body: [])
+
+        mockService.getOfferDealsAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "Should emit loading then success")
+        expectation.expectedFulfillmentCount = 2
+
+        var states: [AppState<GetOfferDealsModal>] = []
+
+        viewModel.$state
+            .dropFirst()
+            .sink { state in
+                states.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.getOfferDealsAPI()
+
+        wait(for: [expectation], timeout: 2)
+        XCTAssertEqual(states[0], .loading)
+        XCTAssertEqual(states[1], .success(response))
+    }
+
+    func testNilBodyShouldSetFailure() {
+        // Given
+        let response = GetOfferDealsModal(success: true, code: 200, message: "Missing body", body: nil)
+
+        mockService.getOfferDealsAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "Should emit failure due to nil body")
+
+        viewModel.$state
+            .dropFirst()
+            .sink { state in
+                if case .failure(let error) = state {
+                    XCTAssertEqual(error, .invalidResponse)
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        // When
+        viewModel.getOfferDealsAPI()
+
+        // Then
+        wait(for: [expectation], timeout: 1.0)
+    }
+    func testIsDataEmptyShouldReturnTrueWhenEmpty() {
+        let response = GetOfferDealsModal(success: true, code: 200, message: "OK", body: [])
+
+        mockService.getOfferDealsAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "isDataEmpty should be true")
+
+        viewModel.$state
+            .dropFirst()
+            .sink { state in
+                if case .success = state {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        viewModel.getOfferDealsAPI()
+
+        wait(for: [expectation], timeout: 1.0)
+        XCTAssertTrue(viewModel.isDataEmpty)
+    }
+
+    func testFormattedDealTextOutOfBoundsShouldReturnEmpty() {
+        // No deals in the array
+        let result = viewModel.formattedDealText(at: 5)
+        XCTAssertEqual(result, "")
+    }
+
+    func testImageURLsWhenIndexOutOfBoundsShouldReturnBaseURL() {
+        // Nothing added to dealsBody
+        let dealURL = viewModel.dealImageUrl(at: 10)
+        let storeURL = viewModel.storeImageUrl(at: 10)
+
+        XCTAssertEqual(dealURL, imageURL)
+        XCTAssertEqual(storeURL, imageURL)
+    }
+
+    
 }

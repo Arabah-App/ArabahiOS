@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - CategoryListModal
-struct CategoryListModal: Codable {
+struct CategoryListModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct CategoryListModal: Codable {
 }
 
 // MARK: - CategoryListModalBody
-struct CategoryListModalBody: Codable {
+struct CategoryListModalBody: Codable, Equatable {
     let category: [Categorys]?
 
     enum CodingKeys: String, CodingKey {

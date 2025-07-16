@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - LikeModal
-struct LikeModal: Codable {
+struct LikeModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct LikeModal: Codable {
 }
 
 // MARK: - LikeModalBody
-struct LikeModalBody: Codable {
+struct LikeModalBody: Codable, Equatable {
     let id, userID: String?
     let status: Int?
     let deleted: Bool?

@@ -118,7 +118,7 @@ class EditProfileVC: UIViewController {
     }
     
     /// Handles UI changes based on the state emitted by the ViewModel.
-    private func handleStateChange(_ state: EditProfileViewModel.State) {
+    private func handleStateChange(_ state: AppState<LoginModal>) {
         switch state {
         case .idle:
             break
@@ -131,7 +131,7 @@ class EditProfileVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             showErrorAlert(error: error)
-        case .validationFailure(let error):
+        case .validationError(let error):
             showValidationErrorAlert(error: error)
             hideLoadingIndicator()
         }
@@ -162,27 +162,7 @@ class EditProfileVC: UIViewController {
         countryImg.image = country.flag
         coutryCode.text = country.phoneCode
     }
-    
-    // MARK: - Helpers
-    
-    /// Displays a loading spinner and disables UI interaction.
-    private func showLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = false
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides the loading spinner and re-enables UI interaction.
-    private func hideLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = true
-            MBProgressHUD.hide(for: self.view, animated: true)
-        }
-    }
-    
+
     // MARK: - Actions
     
     /// Opens the country picker when the button is tapped.

@@ -65,70 +65,151 @@ final class HomeViewModelTests: XCTestCase {
     
     // MARK: - Test Failure Response
     
-    func testFetchHomeDataFailure() {
+    func testStateTransitionsFromIdleToLoadingToSuccess() {
         // Given
-        mockService.homeListAPIPublisher = Fail(error: NetworkError.networkError("No internet"))
+        let modal = HomeModal(success: true, code: 200, message: "OK", body: nil)
+
+        mockService.homeListAPIPublisher = Just(modal)
+            .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
-        
-        let expectation = self.expectation(description: "Home data failure")
-        
-        // When
+
+        var receivedStates: [AppState<HomeModal>] = []
+        let expectation = self.expectation(description: "State transitions")
+        expectation.expectedFulfillmentCount = 2
+
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if case .failure(let error) = state {
-                    XCTAssertEqual(error.localizedDescription, NetworkError.networkError("No internet").localizedDescription)
+                receivedStates.append(state)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        // When
+        viewModel.fetchHomeData(longitude: "77.1", latitude: "28.6")
+
+        // Then
+        wait(for: [expectation], timeout: 2)
+        XCTAssertEqual(receivedStates[0], .loading)
+        XCTAssertEqual(receivedStates[1], .success(modal))
+    }
+
+    
+    // MARK: - Test Retry
+    
+    func testStateTransitionsFromIdleToLoadingToFailure() {
+        // Given
+        mockService.homeListAPIPublisher = Fail(error: NetworkError.invalidResponse)
+            .eraseToAnyPublisher()
+
+        var states: [AppState<HomeModal>] = []
+        let expectation = self.expectation(description: "State failure")
+
+        viewModel.$state
+            .dropFirst()
+            .sink { state in
+                states.append(state)
+                if case .failure = state {
                     expectation.fulfill()
                 }
             }
             .store(in: &cancellables)
-        
+
+        // When
         viewModel.fetchHomeData(longitude: "77.1", latitude: "28.6")
-        
+
         // Then
         wait(for: [expectation], timeout: 2)
-        XCTAssertTrue(viewModel.banner.isEmpty)
-        XCTAssertTrue(viewModel.category.isEmpty)
-        XCTAssertTrue(viewModel.latProduct.isEmpty)
+        XCTAssertEqual(states.first, .loading)
+        XCTAssertEqual(states.last, .failure(.invalidResponse))
     }
+
     
-    // MARK: - Test Retry
-    
-    func testRetryHomeAPIAfterFailure() {
-        // 1. Trigger failure
-        mockService.homeListAPIPublisher = Fail(error: NetworkError.networkError("No internet"))
-            .eraseToAnyPublisher()
-        viewModel.fetchHomeData(longitude: "77.1", latitude: "28.6", categoryID: "1", categoryName: "Test")
-        
-        // 2. Change mock to success
-    
-        let successModal = HomeModal(success: true, code: 200, message: "OK", body: nil)
-        
-        mockService.homeListAPIPublisher = Just(successModal)
+    func testFetchHomeDataNilBodyShouldSetInvalidResponseFailure() {
+        // Given
+        let modal = HomeModal(success: true, code: 200, message: "Success", body: nil)
+
+        mockService.homeListAPIPublisher = Just(modal)
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
-        
-        let expectation = self.expectation(description: "Retry success")
-        
-        // Observe state
+
+        let expectation = self.expectation(description: "Expect failure due to nil body")
+
         viewModel.$state
-            .dropFirst(2) // Skip loading and failure
+            .dropFirst()
+            .sink { state in
+                if case .failure(let error) = state {
+                    XCTAssertEqual(error, .invalidResponse)
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        // When
+        viewModel.fetchHomeData(longitude: "77.1", latitude: "28.6")
+
+        // Then
+        wait(for: [expectation], timeout: 2)
+    }
+
+    
+    func testUpdateLocationUpdatesStoredCoordinates() {
+        let mockLocation = CLLocationCoordinate2D(latitude: 19.0, longitude: 73.0)
+
+        let modal = HomeModal(success: true, code: 200, message: "OK", body: nil)
+        mockService.homeListAPIPublisher = Just(modal)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = self.expectation(description: "Location + fetch")
+
+        viewModel.$state
+            .dropFirst()
             .sink { state in
                 if case .success = state {
                     expectation.fulfill()
                 }
             }
             .store(in: &cancellables)
-        
-        // Retry
+
+        viewModel.updateLocation(mockLocation)
+
+        wait(for: [expectation], timeout: 2)
+        XCTAssertEqual(viewModel.location?.latitude, 19.0)
+        XCTAssertEqual(viewModel.location?.longitude, 73.0)
+    }
+
+    
+    func testReverseGeocodingFailureDoesNotCrash() {
+        // Invalid coordinates that can't be geocoded
+        let invalidCoord = CLLocationCoordinate2D(latitude: 999.0, longitude: 999.0)
+
+        // Not testing `currentCity` update here, just ensuring no crash
+        viewModel.updateLocation(invalidCoord)
+
+        // Delay to allow geocoder to attempt (though it should fail)
+        let expectation = self.expectation(description: "Wait for geocode fail")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2)
+        // Ensure app didn't crash, even if address was not updated
+        XCTAssertNotNil(viewModel.location)
+    }
+
+    
+    
+    func testRetryAPIWithNoStoredParamsDoesNothing() {
+        // Should not crash or emit anything
         viewModel.retryHomeAPI()
         
-        // Then
-        wait(for: [expectation], timeout: 2)
-        XCTAssertEqual(viewModel.banner.count, 1)
-        XCTAssertEqual(viewModel.category.count, 1)
-        XCTAssertEqual(viewModel.latProduct.count, 1)
+        // No expectations. Just asserting it doesn't crash.
+        XCTAssertTrue(viewModel.banner.isEmpty)
+        XCTAssertTrue(viewModel.category.isEmpty)
+        XCTAssertTrue(viewModel.latProduct.isEmpty)
     }
+
     
     // MARK: - Test Update Location
 

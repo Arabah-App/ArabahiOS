@@ -72,7 +72,7 @@ class ChangeLangVC: UIViewController {
     }
     
     /// Handles ViewModel state changes (idle, loading, success, failure)
-    private func handleStateChange(_ state: ChangeLanViewModel.State) {
+    private func handleStateChange(_ state: AppState<LoginModal>) {
         switch state {
         case .idle:
             break
@@ -84,24 +84,8 @@ class ChangeLangVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             showErrorAlert(error: error)
-        }
-    }
-    
-    // MARK: - LOADING & ERROR UI
-    
-    private func showLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = false
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    private func hideLoadingIndicator() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.view.isUserInteractionEnabled = true
-            MBProgressHUD.hide(for: self.view, animated: true)
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
     

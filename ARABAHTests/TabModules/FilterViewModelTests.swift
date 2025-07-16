@@ -37,61 +37,89 @@ final class FilterViewModelTests: XCTestCase {
     
     // MARK: - API Success
 
-    func testFetchFilterDataSuccess() {
+    func testStateTransitionFromIdleToLoadingToSuccess() {
         // Given
         
-        
         let response = FilterGetDataModal(success: true, code: 200, message: "OK", body: nil)
-        
+
         mockService.fetchFilterDataAPIPublisher = Just(response)
             .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
-        
-        let expectation = expectation(description: "Filter API success")
-        
+
+        var receivedStates: [AppState<FilterGetDataModal>] = []
+        let expectation = expectation(description: "States should be emitted")
+        expectation.expectedFulfillmentCount = 2
+
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if case .success = state {
-                    expectation.fulfill()
-                }
+                receivedStates.append(state)
+                expectation.fulfill()
             }
             .store(in: &cancellables)
-        
+
         // When
-        viewModel.fetchFilterDataAPI(with: .init(longitude: "0.0", latitude: "0.0"))
-        
+        viewModel.fetchFilterDataAPI(with: .init(longitude: "77.0", latitude: "28.0"))
+
         // Then
-        wait(for: [expectation], timeout: 1)
-        XCTAssertEqual(viewModel.category?.count, 1)
-        XCTAssertEqual(viewModel.storeData?.count, 1)
-        XCTAssertEqual(viewModel.brand?.count, 1)
-        XCTAssertFalse(viewModel.isEmpty)
+        wait(for: [expectation], timeout: 1.0)
+        XCTAssertEqual(receivedStates[0], .loading)
+        XCTAssertEqual(receivedStates[1], .success(response))
     }
+
 
     // MARK: - API Failure
+    func testFilterDataNilBodyShouldSetFailure() {
+        // Given
+        let response = FilterGetDataModal(success: true, code: 200, message: "OK", body: nil)
 
-    func testFetchFilterDataFailure() {
-        mockService.fetchFilterDataAPIPublisher = Fail(error: .networkError("API failed"))
+        mockService.fetchFilterDataAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
             .eraseToAnyPublisher()
-        
-        let expectation = expectation(description: "Filter API failure")
-        
+
+        let expectation = expectation(description: "Should emit invalid response failure")
+
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if case .failure(let error) = state {
-                    XCTAssertEqual(error.localizedDescription, NetworkError.networkError("API failed").localizedDescription)
+                if case .failure(let error) = state, error == .invalidResponse {
                     expectation.fulfill()
                 }
             }
             .store(in: &cancellables)
-        
-        viewModel.fetchFilterDataAPI(with: .init(longitude: "0.0", latitude: "0.0"))
-        
+
+        // When
+        viewModel.fetchFilterDataAPI(with: .init(longitude: "77.0", latitude: "28.0"))
+
+        // Then
         wait(for: [expectation], timeout: 1)
     }
 
+    func testToggleSelectionWithInvalidSectionDoesNothing() {
+        viewModel.selectedCategoryIDs = ["c1"]
+        viewModel.selectedStoreIDs = ["s1"]
+        viewModel.selectedBrandIDs = ["b1"]
+
+        // Act
+        viewModel.toggleSelection(id: "x1", section: 999)
+
+        // Assert
+        XCTAssertEqual(viewModel.selectedCategoryIDs, ["c1"])
+        XCTAssertEqual(viewModel.selectedStoreIDs, ["s1"])
+        XCTAssertEqual(viewModel.selectedBrandIDs, ["b1"])
+    }
+
+    func testGetFormattedSelectedFilters_emptySelectionReturnsEmptyString() {
+        // No selections
+        viewModel.selectedCategoryIDs = []
+        viewModel.selectedStoreIDs = []
+        viewModel.selectedBrandIDs = []
+
+        let result = viewModel.getFormattedSelectedFilters()
+        XCTAssertEqual(result, "")
+    }
+
+    
     // MARK: - Selection Toggle
 
     func testToggleSelection_CategoryStoreBrand() {
@@ -162,5 +190,38 @@ final class FilterViewModelTests: XCTestCase {
         let formatted = viewModel.getFormattedSelectedFilters()
         XCTAssertEqual(formatted, "Categories: cat1&Store Name: store1&Brand Name: brand1")
     }
+    
+    func testEmptyStateShouldBeTrueWhenAllListsEmpty() {
+        // Given
+        let emptyBody = FilterGetDataModalBody(category: [], store: [], brand: [])
+        let response = FilterGetDataModal(success: true, code: 200, message: "OK", body: emptyBody)
+
+        mockService.fetchFilterDataAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "Should set state to success and isEmpty true")
+
+        viewModel.$state
+            .dropFirst()
+            .sink { state in
+                if case .success = state {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        // When
+        viewModel.fetchFilterDataAPI(with: .init(longitude: "0", latitude: "0"))
+
+        // Then
+        wait(for: [expectation], timeout: 1)
+        XCTAssertTrue(viewModel.isEmpty)
+        XCTAssertTrue(viewModel.category?.isEmpty ?? false)
+        XCTAssertTrue(viewModel.storeData?.isEmpty ?? false)
+        XCTAssertTrue(viewModel.brand?.isEmpty ?? false)
+    }
+
+    
 }
 

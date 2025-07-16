@@ -10,33 +10,15 @@ import Combine
 
 /// Handles all note-related operations including CRUD and search functionality
 final class NotesViewModel {
-    
-    // MARK: - State Management
-    
-    /// Tracks the current state of note operations
-    enum State {
-        case idle  // Initial state, no operation in progress
-        case loading  // API call in progress
-        
-        // Success cases
-        case notesListSuccess([NotesText])  // Successfully fetched notes list
-        case getNotesDetailSuccess(CreateNotesModalBody)  // Successfully fetched note details
-        case notesDeleteSuccess  // Successfully deleted note
-        case createNotesSuccess  // Successfully created note
-        case getNotesSuccess  // Successfully fetched notes
-        
-        // Failure cases
-        case notesListFailure(NetworkError)
-        case notesDetailFailure(NetworkError)
-        case notesDeleteFailure(NetworkError)
-        case createNotesFailure(NetworkError)
-        case getNotesFailure(NetworkError)
-    }
 
     // MARK: - Properties
     
     /// Current state that views can observe
-    @Published private(set) var state: State = .idle
+    @Published private(set) var notesListState: AppState<[NotesText]> = .idle
+    @Published private(set) var notesDetailState: AppState<CreateNotesModalBody> = .idle
+    @Published private(set) var notesDeleteState: AppState<NewCommonString> = .idle
+    @Published private(set) var createNoteState: AppState<CreateNotesModal> = .idle
+    @Published private(set) var getNotesState: AppState<GetNotesModal> = .idle
     
     /// All notes fetched from the server
     @Published private(set) var modal: [GetNotesModalBody]? = []
@@ -117,60 +99,60 @@ final class NotesViewModel {
     
     /// Fetches all notes from server
     func getNotesAPI() {
-        state = .loading
+        getNotesState = .loading
         networkService.getNotesAPI()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .getNotesFailure(error)
+                    self?.getNotesState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: GetNotesModal) in
                 guard let contentBody = response.body else {
-                    self?.state = .getNotesFailure(.invalidResponse)
+                    self?.getNotesState = .failure(.invalidResponse)
                     return
                 }
                 self?.modal = contentBody
                 self?.filteredModal = contentBody  // Initialize filtered list
-                self?.state = .getNotesSuccess
+                self?.getNotesState = .success(response)
             }
             .store(in: &cancellables)
     }
 
     /// Fetches notes list (alternative endpoint)
     func createNotesGetListAPI() {
-        state = .loading
+        notesListState = .loading
         networkService.createNotesGetListAPI()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .notesListFailure(error)
+                    self?.notesListState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: CreateNoteListModal) in
                 guard let contentBody = response.body else {
-                    self?.state = .notesListFailure(.invalidResponse)
+                    self?.notesListState = .failure(.invalidResponse)
                     return
                 }
-                self?.state = .notesListSuccess(contentBody)
+                self?.notesListState = .success(contentBody)
             }
             .store(in: &cancellables)
     }
 
     /// Fetches details for a specific note
     func getNotesDetailAPI(id: String) {
-        state = .loading
+        notesDetailState = .loading
         
         networkService.getNotesDetailAPI(id: id)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .notesDetailFailure(error)
+                    self?.notesDetailState = .failure(error)
                 }
             } receiveValue: { [weak self] (response: CreateNotesModal) in
                 guard let contentBody = response.body else {
-                    self?.state = .notesDetailFailure(.invalidResponse)
+                    self?.notesDetailState = .failure(.invalidResponse)
                     return
                 }
-                self?.state = .getNotesDetailSuccess(contentBody)
+                
                 
                 // Update local text state with fetched content
                 if let notesArray = contentBody.notesText, !notesArray.isEmpty {
@@ -178,29 +160,31 @@ final class NotesViewModel {
                 } else {
                     self?.texts = [NotesCreate(text: "")]  // Default empty note
                 }
+                
+                self?.notesDetailState = .success(contentBody)
             }
             .store(in: &cancellables)
     }
 
     /// Deletes a specific note
     func notesDeleteAPI(id: String) {
-        state = .loading
+        notesDeleteState = .loading
         
         networkService.notesDeleteAPI(id: id)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .notesDeleteFailure(error)
+                    self?.notesDeleteState = .failure(error)
                 }
-            } receiveValue: { [weak self] (_: NewCommonString) in
-                self?.state = .notesDeleteSuccess
+            } receiveValue: { [weak self] (response: NewCommonString) in
+                self?.notesDeleteState = .success(response)
             }
             .store(in: &cancellables)
     }
 
     /// Creates or updates a note
     func createNotesAPI(id: String) {
-        state = .loading
+        createNoteState = .loading
         
         // Filter out empty notes before saving
         let nonEmptyNotes = texts.filter {
@@ -216,10 +200,10 @@ final class NotesViewModel {
                     .receive(on: DispatchQueue.main)
                     .sink { [weak self] completion in
                         if case .failure(let error) = completion {
-                            self?.state = .createNotesFailure(error)
+                            self?.createNoteState = .failure(error)
                         }
-                    } receiveValue: { [weak self] (_: CreateNotesModal) in
-                        self?.state = .createNotesSuccess
+                    } receiveValue: { [weak self] (response: CreateNotesModal) in
+                        self?.createNoteState = .success(response)
                     }
                     .store(in: &cancellables)
             }

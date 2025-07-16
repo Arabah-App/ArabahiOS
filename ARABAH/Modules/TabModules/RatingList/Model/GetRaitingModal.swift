@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - GetRaitingModal
-struct GetRaitingModal: Codable {
+struct GetRaitingModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,14 +16,14 @@ struct GetRaitingModal: Codable {
 }
 
 // MARK: - GetRaitingModalBody
-struct GetRaitingModalBody: Codable {
+struct GetRaitingModalBody: Codable, Equatable {
     let ratinglist: [Ratinglist]?
     let ratingCount: Int?
     let averageRating: Double?
 }
 
 // MARK: - Ratinglist
-struct Ratinglist: Codable {
+struct Ratinglist: Codable, Equatable {
     let id, productID: String?
     let userID: UserID?
     let rating: Int?
@@ -42,7 +42,7 @@ struct Ratinglist: Codable {
 }
 
 // MARK: - UserID
-struct UserID: Codable {
+struct UserID: Codable, Equatable {
     var id, name, image: String?
     var nameArabic : String?
 

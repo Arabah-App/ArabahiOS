@@ -6,7 +6,7 @@
 import Foundation
 
 // MARK: - HomeModal
-struct HomeModal: Codable {
+struct HomeModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -14,7 +14,7 @@ struct HomeModal: Codable {
 }
 
 // MARK: - HomeModalBody
-struct HomeModalBody: Codable {
+struct HomeModalBody: Codable, Equatable {
     var banner: [Banner]?
     var category: [Categorys]?
     var latestProduct: [LatestProduct]?
@@ -27,7 +27,7 @@ struct HomeModalBody: Codable {
 }
 
 // MARK: - Banner
-struct Banner: Codable {
+struct Banner: Codable, Equatable {
     let id, image: String?
     let deleted: Bool?
     let createdAt, updatedAt: String?
@@ -41,7 +41,7 @@ struct Banner: Codable {
 }
 
 // MARK: - Categorys
-struct Categorys: Codable {
+struct Categorys: Codable, Equatable {
     var id, categoryName, image: String?
     let location: Location?
     let status: Int?
@@ -92,7 +92,7 @@ struct Categorys: Codable {
 }
 
 // MARK: - Location
-struct Location: Codable {
+struct Location: Codable, Equatable {
     let type, locationName: String?
     let coordinates: [Double]?
     
@@ -105,7 +105,7 @@ struct Location: Codable {
 }
 
 // MARK: - LatestProduct
-struct LatestProduct: Codable {
+struct LatestProduct: Codable, Equatable {
     let id: String?
     let userID: String?
     let categoryNames: String?
@@ -171,7 +171,7 @@ struct LatestProduct: Codable {
     }
 }
 
-struct Product: Codable {
+struct Product: Codable, Equatable {
     let shopName: String?
     let price: Double?
     let date, id: String?

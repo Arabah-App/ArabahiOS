@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - AddCommentModal
-struct AddCommentModal: Codable {
+struct AddCommentModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct AddCommentModal: Codable {
 }
 
 // MARK: - AddCommentModalBody
-struct AddCommentModalBody: Codable {
+struct AddCommentModalBody: Codable, Equatable {
     let productID, userID, comment: String?
     let deleted: Bool?
     let id, createdAt, updatedAt: String?

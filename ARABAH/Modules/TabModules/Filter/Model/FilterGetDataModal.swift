@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - FilterGetDataModal
-struct FilterGetDataModal: Codable {
+struct FilterGetDataModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct FilterGetDataModal: Codable {
 }
 
 // MARK: - FilterGetDataModalBody
-struct FilterGetDataModalBody: Codable {
+struct FilterGetDataModalBody: Codable, Equatable {
     let category: [Categorys]?
     let store: [Stores]?
     let brand: [Brand]?
@@ -28,7 +28,7 @@ struct FilterGetDataModalBody: Codable {
 }
 
 // MARK: - Brand
-struct Brand: Codable {
+struct Brand: Codable, Equatable {
     let id: String?
     var brandname, brandnameArabic: String?
     let deleted: Bool?
@@ -65,7 +65,7 @@ struct Brand: Codable {
 }
 
 // MARK: - Stores
-struct Stores: Codable {
+struct Stores: Codable, Equatable {
     let id, image, createdAt: String?
     let updatedAt: String?
     let v: Int?

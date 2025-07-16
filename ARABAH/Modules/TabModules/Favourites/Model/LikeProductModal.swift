@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - LikeProductModal
-struct LikeProductModal: Codable {
+struct LikeProductModal: Codable,Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct LikeProductModal: Codable {
 }
 
 // MARK: - LikeProductModalBody
-struct LikeProductModalBody: Codable {
+struct LikeProductModalBody: Codable, Equatable {
     let id, userID: String?
     let productID: ProductID?
     let status: Int?
@@ -35,7 +35,7 @@ struct LikeProductModalBody: Codable {
 }
 
 // MARK: - ProductID
-struct ProductID: Codable {
+struct ProductID: Codable, Equatable {
     var id, name, price, image: String?
     var prodiuctUnit, ProdiuctUnitArabic: String?
     var nameArabic : String

@@ -10,27 +10,15 @@ import Combine
 import Charts
 
 final class ProductDetailViewModel: NSObject, ObservableObject {
-    
-    // MARK: - State Enum
-    /// Represents the various states the view model can be in
-    enum State: Equatable {
-        case idle
-        case loading
-        case prodcutDetailSuccess
-        case QRDetailSuccess
-        case notifySuccess(Int)
-        case likeSuccess(Int)
-        case addToShopSuccess(String)
-        case prodcutDetailFailure(NetworkError)
-        case QRDetailFailure(NetworkError)
-        case notifyFailure(NetworkError)
-        case likeFailure(NetworkError)
-        case addToShopFailure(NetworkError)
-    }
+
     
     // MARK: - Published Properties
     /// The current state of the view model
-    @Published private(set) var state: State = .idle
+    @Published private(set) var productDetailState: AppState<ProductDetailModal> = .idle
+    @Published private(set) var QRDetailState: AppState<ProductDetailModal> = .idle
+    @Published private(set) var notifyState: AppState<Int> = .idle
+    @Published private(set) var likeState: AppState<Int> = .idle
+    @Published private(set) var addToShopState: AppState<String> = .idle
     /// The main product detail data
     @Published private(set) var modal: ProductDetailModalBody?
     /// List of similar products
@@ -170,90 +158,90 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     
     /// Fetches product details by ID
     func productDetailAPI(id: String) {
-        state = .loading
+        productDetailState = .loading
         retryDetailInputs = id
         networkServices.productDetailAPI(id: id)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .prodcutDetailFailure(error)
+                    self?.productDetailState = .failure(error)
                 }
             } receiveValue: { [weak self] response in
                 guard let self = self, let contentBody = response.body else {
-                    self?.state = .prodcutDetailFailure(.invalidResponse)
+                    self?.productDetailState = .failure(.invalidResponse)
                     return
                 }
                 self.updateProductData(contentBody: contentBody)
-                self.state = .prodcutDetailSuccess
+                self.productDetailState = .success(response)
             }
             .store(in: &cancellables)
     }
     
     /// Fetches product details by QR code
     func productDetailAPIByQrCode(id: String) {
-        state = .loading
+        QRDetailState = .loading
         retryDetailInputs = id
         networkServices.productDetailByQrCode(id: id)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .QRDetailFailure(error)
+                    self?.QRDetailState = .failure(error)
                 }
             } receiveValue: { [weak self] response in
                 guard let self = self, let contentBody = response.body else {
-                    self?.state = .QRDetailFailure(.invalidResponse)
+                    self?.QRDetailState = .failure(.invalidResponse)
                     return
                 }
                 self.updateProductData(contentBody: contentBody)
-                self.state = .QRDetailSuccess
+                self.QRDetailState = .success(response)
             }
             .store(in: &cancellables)
     }
     
     /// Toggles notification status for the product
     func notifyMeAPI(notifyStatus: Int) {
-        state = .loading
+        notifyState = .loading
         retryNotifyInputs = notifyStatus
         networkServices.notifyMeAPI(notifyStatus: notifyStatus)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .notifyFailure(error)
+                    self?.notifyState = .failure(error)
                 }
             } receiveValue: { [weak self] _ in
-                self?.state = .notifySuccess(notifyStatus)
+                self?.notifyState = .success(notifyStatus)
             }
             .store(in: &cancellables)
     }
     
     /// Toggles like/dislike status for the product
     func likeDislikeAPI(productID: String) {
-        state = .loading
+        likeState = .loading
         retryLikeInputs = productID
         networkServices.likeDislikeAPI(productID: productID)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .likeFailure(error)
+                    self?.likeState = .failure(error)
                 }
             } receiveValue: { [weak self] response in
-                self?.state = .likeSuccess(response.body?.status ?? 0)
+                self?.likeState = .success(response.body?.status ?? 0)
             }
             .store(in: &cancellables)
     }
     
     /// Adds product to shopping list
     func addToShopAPI(productID: String) {
-        state = .loading
+        addToShopState = .loading
         retryAddToShopInputs = productID
         networkServices.addToShoppingAPI(productID: productID)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 if case .failure(let error) = completion {
-                    self?.state = .addToShopFailure(error)
+                    self?.addToShopState = .failure(error)
                 }
             } receiveValue: { [weak self] response in
-                self?.state = .addToShopSuccess(response.message ?? "")
+                self?.addToShopState = .success(response.message ?? "")
             }
             .store(in: &cancellables)
     }
@@ -516,35 +504,35 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     /// Retries product detail API call
     func retryProductDetailAPI() {
         guard let id = retryDetailInputs else { return }
-        state = .idle
+        productDetailState = .idle
         productDetailAPI(id: id)
     }
     
     /// Retries notification API call
     func retryNotifyAPI() {
         guard let id = retryNotifyInputs else { return }
-        state = .idle
+        notifyState = .idle
         notifyMeAPI(notifyStatus: id)
     }
     
     /// Retries like/dislike API call
     func retryLikeAPI() {
         guard let productID = retryLikeInputs else { return }
-        state = .idle
+        likeState = .idle
         likeDislikeAPI(productID: productID)
     }
     
     /// Retries QR detail API call
     func retryQRDetailAPI() {
         guard let id = retryDetailInputs else { return }
-        state = .idle
+        QRDetailState = .idle
         productDetailAPIByQrCode(id: id)
     }
     
     /// Retries add to shop API call
     func retryAddToShopAPI() {
         guard let productID = retryAddToShopInputs else { return }
-        state = .idle
+        addToShopState = .idle
         addToShopAPI(productID: productID)
     }
 }

@@ -44,7 +44,7 @@ final class RatingListViewModelTests: XCTestCase {
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if state == .success {
+                if state == .success(response) {
                     stateExpectation.fulfill()
                 }
             }
@@ -85,7 +85,7 @@ final class RatingListViewModelTests: XCTestCase {
         viewModel.$state
             .dropFirst()
             .sink { state in
-                if state == .success {
+                if state == .success(response) {
                     expectation.fulfill()
                 }
             }
@@ -158,5 +158,105 @@ final class RatingListViewModelTests: XCTestCase {
         wait(for: [expectation], timeout: 2)
         XCTAssertTrue(viewModel.showNoDataMessage)
     }
+    
+    func testShowNoDataMessageWhenListIsEmpty() {
+        let response = GetRaitingModal(success: true, code: 200, message: "Success", body: nil)
+
+        mockService.raitingListAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "showNoDataMessage should be true")
+
+        viewModel.$showNoDataMessage
+            .dropFirst()
+            .sink { value in
+                if value {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        viewModel.raitingListAPI(productId: "id")
+        wait(for: [expectation], timeout: 1)
+    }
+    
+    func testFormattedTextsOnValidData() {
+        let body = GetRaitingModalBody(ratinglist: [Ratinglist](), ratingCount: 8, averageRating: 3.75)
+        let response = GetRaitingModal(success: true, code: 200, message: "OK", body: body)
+
+        mockService.raitingListAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "Formatted texts set correctly")
+
+        viewModel.$averageRatingText
+            .dropFirst()
+            .sink { _ in
+                XCTAssertEqual(self.viewModel.averageRatingText, "3.75")
+                XCTAssertEqual(self.viewModel.totalReviewsText, "8 Ratings")
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.raitingListAPI(productId: "123")
+        wait(for: [expectation], timeout: 1.0)
+    }
+
+    func testStateResetOnFailure() {
+        mockService.raitingListAPIPublisher = Fail(error: NetworkError.unauthorized)
+            .eraseToAnyPublisher()
+
+        let expectation = expectation(description: "State resets on error")
+
+        viewModel.$state
+            .dropFirst()
+            .sink { state in
+                if case .failure(let error) = state, error == .unauthorized {
+                    XCTAssertNil(self.viewModel.ratingBody)
+                    XCTAssertEqual(self.viewModel.ratingList.count, 0)
+                    XCTAssertEqual(self.viewModel.averageRatingText, "0.0")
+                    XCTAssertEqual(self.viewModel.totalReviewsText, "0 Ratings")
+                    XCTAssertTrue(self.viewModel.showNoDataMessage)
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        viewModel.raitingListAPI(productId: "error-case")
+        wait(for: [expectation], timeout: 1.0)
+    }
+    
+    func testStateTransitions() {
+        let response = GetRaitingModal(success: true, code: 200, message: "OK", body: GetRaitingModalBody(ratinglist: [Ratinglist](), ratingCount: 0, averageRating: 0))
+
+        mockService.raitingListAPIPublisher = Just(response)
+            .setFailureType(to: NetworkError.self)
+            .eraseToAnyPublisher()
+
+        var stateSequence: [AppState<GetRaitingModal>] = []
+
+        let expectation = expectation(description: "Should go through loading and success states")
+
+        viewModel.$state
+            .sink { state in
+                stateSequence.append(state)
+                if stateSequence.contains(where: {
+                    if case .success = $0 { return true }
+                    return false
+                }) {
+                    expectation.fulfill()
+                }
+            }
+            .store(in: &cancellables)
+
+        viewModel.raitingListAPI(productId: "id")
+        wait(for: [expectation], timeout: 1.0)
+
+        XCTAssertEqual(stateSequence.first, .loading)
+        XCTAssertTrue(stateSequence.contains { if case .success = $0 { return true } else { return false } })
+    }
+
 }
 

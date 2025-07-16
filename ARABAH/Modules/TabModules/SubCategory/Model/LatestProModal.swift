@@ -8,7 +8,7 @@
 import Foundation
 
 // MARK: - LatestProModal
-struct LatestProModal: Codable {
+struct LatestProModal: Codable, Equatable {
     let success: Bool?
     let code: Int?
     let message: String?
@@ -16,7 +16,7 @@ struct LatestProModal: Codable {
 }
 
 // MARK: - LatestProModalBody
-struct LatestProModalBody: Codable {
+struct LatestProModalBody: Codable, Equatable{
     let id: String?
     let userID: String?
     let categoryNames, brandname, brandnameArabic: String?
@@ -110,7 +110,7 @@ struct LatestProModalBody: Codable {
 }
 
 
-struct ProductUnitIdModel: Codable {
+struct ProductUnitIdModel: Codable, Equatable {
     let prodiuctUnit: String?
     let prodiuctUnitArabic: String?
     

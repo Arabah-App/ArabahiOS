@@ -224,7 +224,7 @@ extension ScannerVC {
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: NSLocalizedString(RegexTitles.openSettings, comment: ""), style: .default) { [weak self] _ in
-            guard let self = self else { return }
+            guard let _ = self else { return }
             if let appSettings = URL(string: UIApplication.openSettingsURLString),
                UIApplication.shared.canOpenURL(appSettings) {
                 UIApplication.shared.open(appSettings)

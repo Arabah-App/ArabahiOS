@@ -8,6 +8,7 @@
 import Foundation
 import UIKit
 import PhoneNumberKit
+import MBProgressHUD
 
 extension Data {
     mutating func append(_ string: String) {
@@ -148,7 +149,7 @@ extension UIViewController {
         }
     }
     
-    func authNil(val: Bool = false){
+    func authNil(val: Bool = false) {
         if Store.authToken == nil || Store.authToken == ""{
             let vc = storyboard?.instantiateViewController(withIdentifier: "WithoutAuthVC") as! WithoutAuthVC
             vc.isMoveToHome = val
@@ -168,3 +169,26 @@ extension UIViewController {
     }
 }
 
+func validateEmailId(emailID: String) -> Bool {
+    let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+    let trimmedString = emailID.trimmingCharacters(in: .whitespaces)
+    let validateEmail = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
+    let isValidateEmail = validateEmail.evaluate(with: trimmedString)
+    return isValidateEmail
+}
+
+extension UIViewController {
+    func showLoadingIndicator() {
+        DispatchQueue.main.async {
+            MBProgressHUD.showAdded(to: self.view, animated: true)
+            self.view.isUserInteractionEnabled = false
+        }
+    }
+
+    func hideLoadingIndicator() {
+        DispatchQueue.main.async {
+            MBProgressHUD.hide(for: self.view, animated: true)
+            self.view.isUserInteractionEnabled = true
+        }
+    }
+}

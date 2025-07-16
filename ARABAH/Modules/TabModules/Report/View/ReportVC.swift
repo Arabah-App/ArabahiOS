@@ -63,7 +63,7 @@ class ReportVC: UIViewController {
     }
     
     /// Handles different states from ViewModel and updates UI accordingly
-    private func handleStateChange(_ state: ReportViewModel.State) {
+    private func handleStateChange(_ state: AppState<ReportModal>) {
         switch state {
         case .idle:
             // No action needed in idle state
@@ -82,30 +82,10 @@ class ReportVC: UIViewController {
             CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
                 self?.submitReport()
             }
-        case .validateError(let error):
+        case .validationError(let error):
             // Handle validation errors
             hideLoadingIndicator()
             CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
-        }
-    }
-
-    // MARK: - UI Helpers
-    
-    /// Shows loading indicator and disables user interaction
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-
-    /// Hides loading indicator and re-enables user interaction
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
         }
     }
 

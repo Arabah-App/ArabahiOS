@@ -74,7 +74,7 @@ class DealsOffVC: UIViewController {
     
     /// Handles different states from ViewModel and updates UI
     /// - Parameter state: Current state of the ViewModel
-    private func handleStateChange(_ state: DealsViewModel.State) {
+    private func handleStateChange(_ state: AppState<GetOfferDealsModal>) {
         switch state {
         case .idle:
             break
@@ -92,24 +92,8 @@ class DealsOffVC: UIViewController {
             showNoData()
             showErrorAlert(error: error)
             tbl.reloadData()
-        }
-    }
-    
-    /// Shows loading indicator while data is being fetched
-    private func showLoadingIndicator() {
-        view.isUserInteractionEnabled = false
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.showAdded(to: self.view, animated: true)
-        }
-    }
-    
-    /// Hides loading indicator when data fetch completes
-    private func hideLoadingIndicator() {
-        view.isUserInteractionEnabled = true
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            MBProgressHUD.hide(for: self.view, animated: true)
+        case .validationError(_):
+            hideLoadingIndicator()
         }
     }
     

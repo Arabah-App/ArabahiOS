@@ -12,18 +12,10 @@ final class FilterViewModel {
         var latitude: String   // User's current latitude
     }
     
-    // Current state of data loading operations
-    enum State {
-        case idle       // Initial state, no operation in progress
-        case loading    // Currently fetching filter data
-        case success    // Data successfully loaded
-        case failure(NetworkError)  // Failed to load data with error
-    }
-    
     // MARK: - Properties
     
     // Published state that views can observe
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<FilterGetDataModal> = .idle
     
     // Filter data collections
     @Published private(set) var category: [Categorys]? = []  // Product categories
@@ -86,7 +78,7 @@ final class FilterViewModel {
             self?.restoreStoredFilters()
             
             // Mark operation as successful
-            self?.state = .success
+            self?.state = .success(response)
         }
         .store(in: &cancellables)
     }

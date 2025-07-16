@@ -10,21 +10,10 @@ import Combine
 
 final class ContactUsViewModel {
     
-    // MARK: - Output
-    
-    /// Represents the different UI states for the Contact Us screen
-    enum State {
-        case idle                    // Initial or reset state
-        case loading                 // When API request is in progress
-        case success(ContactUsModal) // When API responds successfully
-        case failure(NetworkError)   // When API fails with an error
-        case validationFailure(NetworkError)   // validation with an error
-    }
-    
     // MARK: - Properties
     
     /// Published property to notify the view of state changes
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<ContactUsModal> = .idle
     
     /// Set to manage Combine subscriptions
     private var cancellables = Set<AnyCancellable>()
@@ -54,7 +43,7 @@ final class ContactUsViewModel {
         self.previousParams = (name: name, email: email, message: message)
         
         // Validate input before proceeding
-        guard validateInputs(firstName: name, email: email, message: message) else {
+        guard validateInputs(name: name, email: email, message: message) else {
             return
         }
         
@@ -85,20 +74,14 @@ final class ContactUsViewModel {
     
     /// Validates user input fields before making the API call
     /// - Returns: `true` if all fields are valid, otherwise `false`
-    private func validateInputs(firstName: String, email: String, message: String) -> Bool {
-        if firstName.trimmingCharacters(in: .whitespaces).isEmpty {
-            state = .validationFailure(.validationError(RegexMessages.emptyName))
-            return false
-        } else if email.trimmingCharacters(in: .whitespaces).isEmpty {
-            state = .validationFailure(.validationError(RegexMessages.emptyEmail))
-            return false
-        } else if !Validation().validateEmailId(emailID: email) {
-            state = .validationFailure(.validationError(RegexMessages.invalidEmail))
-            return false
-        } else if message.trimmingCharacters(in: .whitespaces).isEmpty {
-            state = .validationFailure(.validationError(RegexMessages.emptyMessage))
+    private func validateInputs(name: String, email: String, message: String) -> Bool {
+        let validate = Validator.validateContactUs(name, email, message)
+        switch validate {
+        case .success:
+            return true
+        case .failure(let error):
+            state = .validationError(.validationError(error.localizedDescription))
             return false
         }
-        return true
     }
 }

@@ -31,7 +31,7 @@ class AddTicketViewModel: NSObject {
     // MARK: - Properties
 
     /// Published property to notify the UI about state changes.
-    @Published private(set) var state: State = .idle
+    @Published private(set) var state: AppState<ReportModal> = .idle
 
     /// Combine cancellables for managing memory.
     private var cancellables = Set<AnyCancellable>()
@@ -91,7 +91,7 @@ class AddTicketViewModel: NSObject {
             } receiveValue: { [weak self] (response: ReportModal) in
                 // Show success alert and update state
                 CommonUtilities.shared.showAlert(message: response.message ?? "", isSuccess: .success)
-                self?.state = .success
+                self?.state = .success(response)
             }
             .store(in: &cancellables)
     }
@@ -112,13 +112,14 @@ class AddTicketViewModel: NSObject {
     ///   - description: Trimmed description string.
     /// - Returns: A Boolean value indicating whether the inputs are valid.
     private func validateInputs(title: String, description: String) -> Bool {
-        if title.isEmpty {
-            state = .validateError(.badRequest(message: RegexMessages.emptytittle))
-            return false
-        } else if description.isEmpty {
-            state = .validateError(.badRequest(message: RegexMessages.emptyDescription))
+        let validator = Validator.validateAddTicket(title, description)
+        
+        switch validator {
+        case .success:
+            return true
+        case .failure(let error):
+            state = .validationError(.badRequest(message: error.localizedDescription))
             return false
         }
-        return true
     }
 }
