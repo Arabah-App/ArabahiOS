@@ -80,7 +80,7 @@ class ReportVC: UIViewController {
             // Handle API failure with retry option
             hideLoadingIndicator()
             CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
-                self?.submitReport()
+                self?.submitReport(isRetry: true)
             }
         case .validationError(let error):
             // Handle validation errors
@@ -110,7 +110,7 @@ class ReportVC: UIViewController {
     // MARK: - Report Submission
     
     /// Handles report submission process
-    private func submitReport() {
+    private func submitReport(isRetry: Bool) {
         // Check for authentication token before proceeding
         guard let token = Store.authToken, !token.isEmpty else {
             self.authNil()
@@ -123,7 +123,7 @@ class ReportVC: UIViewController {
             message: self.txtView.text
         )
         // Trigger report API call through ViewModel
-        viewModel.reportAPI(with: input)
+        viewModel.reportAPI(with: input, isRetry: isRetry)
     }
 
     // MARK: - ACTIONS
@@ -135,6 +135,6 @@ class ReportVC: UIViewController {
 
     /// Handles submit button tap to initiate report submission
     @IBAction func BtnSubmit(_ sender: UIButton) {
-        submitReport()
+        submitReport(isRetry: false)
     }
 }

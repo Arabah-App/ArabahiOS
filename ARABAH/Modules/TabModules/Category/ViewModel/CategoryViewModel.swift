@@ -42,7 +42,8 @@ final class CategoryViewModel {
 
     /// Network service used to fetch categories.
     private let networkService: HomeServicesProtocol
-
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
 
     /// Initializes the view model with a network service.
@@ -56,7 +57,7 @@ final class CategoryViewModel {
     /// Fetches categories from the backend using the current latitude and longitude.
     func fetchCategories() {
         state = .loading
-
+        retryCount = 0
         networkService.fetchCategories(latitude: latitude, longitude: longitude)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -79,6 +80,12 @@ final class CategoryViewModel {
 
     /// Retries the category fetch operation.
     func retry() {
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
         fetchCategories()
     }
 

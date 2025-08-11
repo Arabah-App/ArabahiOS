@@ -34,7 +34,7 @@ class NotesListingVC: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        viewModel.getNotesAPI()  // Refresh notes list when view appears
+        viewModel.getNotesAPI(isRetry: false)  // Refresh notes list when view appears
     }
     
     // MARK: - ACTIONS
@@ -107,7 +107,7 @@ extension NotesListingVC: UITableViewDelegate, UITableViewDataSource {
             vc.closure = { [weak self] in
                 guard let self = self else { return }
                 let getid = self.viewModel.filteredModal[indexPath.row].id ?? ""
-                self.viewModel.notesDeleteAPI(id: getid)  // Delete from server
+                self.viewModel.notesDeleteAPI(id: getid, isRetry: false)  // Delete from server
                 self.viewModel.removeModel(at: indexPath.row)  // Remove from local list
             }
             self.present(vc, animated: true)
@@ -184,12 +184,13 @@ extension NotesListingVC {
         case .success(_):
             hideLoadingIndicator()
             showSuccess(message: RegexMessages.deleteNote)  // Show success message
-            viewModel.getNotesAPI()  // Refresh list after deletion
+            viewModel.getNotesAPI(isRetry: false)  // Refresh list after deletion
         case .failure(let error):
             hideLoadingIndicator()
             showErrorAlert(title: appName, message: error.localizedDescription)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -207,8 +208,9 @@ extension NotesListingVC {
             hideLoadingIndicator()
             setNoDataMsg(count: 0)
             showErrorAlert(title: appName, message: error.localizedDescription)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -224,7 +226,7 @@ extension NotesListingVC {
     /// Shows error alert with retry option
     private func showErrorAlert(title: String, message: String) {
         CommonUtilities.shared.showAlertWithRetry(title: title, message: message) { [weak self] _ in
-            self?.viewModel.getNotesAPI()  // Retry on error
+            self?.viewModel.getNotesAPI(isRetry: true)  // Retry on error
         }
     }
     

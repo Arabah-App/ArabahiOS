@@ -135,8 +135,9 @@ class ReviewVC: UIViewController {
             // Hide loading and show error on failure
             hideLoadingIndicator()
             showErrorAlert(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -146,7 +147,7 @@ class ReviewVC: UIViewController {
     private func showErrorAlert(error: NetworkError) {
         CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
             // Retry loading reviews when user taps retry
-            self?.viewModel.raitingListAPI(productId: self?.productID ?? "")
+            self?.viewModel.retryRatingListAPI()
         }
     }
     

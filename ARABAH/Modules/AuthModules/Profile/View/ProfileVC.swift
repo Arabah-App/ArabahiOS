@@ -119,8 +119,9 @@ class ProfileVC: UIViewController {
             hideLoadingIndicator()
         case .failure(_):
             hideLoadingIndicator()
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -138,8 +139,9 @@ class ProfileVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             handleUpdateStatusError(error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -157,8 +159,9 @@ class ProfileVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             handleDeleteAccountError(error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -176,8 +179,9 @@ class ProfileVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             handleLogoutError(error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     

@@ -14,6 +14,7 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     
     // MARK: - Published Properties
     /// The current state of the view model
+   
     @Published private(set) var productDetailState: AppState<ProductDetailModal> = .idle
     @Published private(set) var QRDetailState: AppState<ProductDetailModal> = .idle
     @Published private(set) var notifyState: AppState<Int> = .idle
@@ -146,7 +147,12 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     private var retryNotifyInputs: Int?
     private var retryLikeInputs: String?
     private var retryAddToShopInputs: String?
-    
+    private var productDetailRetry = 0
+    private var QRDetailRetry = 0
+    private var notifyRetry = 0
+    private var likeRetry = 0
+    private var addToShopRetry = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     init(networkServices: ProductInfoServicesProtocol = ProductInfoServices()) {
@@ -160,6 +166,7 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     func productDetailAPI(id: String) {
         productDetailState = .loading
         retryDetailInputs = id
+        productDetailRetry = 0
         networkServices.productDetailAPI(id: id)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -180,6 +187,7 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     /// Fetches product details by QR code
     func productDetailAPIByQrCode(id: String) {
         QRDetailState = .loading
+        QRDetailRetry = 0
         retryDetailInputs = id
         networkServices.productDetailByQrCode(id: id)
             .receive(on: DispatchQueue.main)
@@ -201,6 +209,7 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     /// Toggles notification status for the product
     func notifyMeAPI(notifyStatus: Int) {
         notifyState = .loading
+        notifyRetry = 0
         retryNotifyInputs = notifyStatus
         networkServices.notifyMeAPI(notifyStatus: notifyStatus)
             .receive(on: DispatchQueue.main)
@@ -217,6 +226,7 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     /// Toggles like/dislike status for the product
     func likeDislikeAPI(productID: String) {
         likeState = .loading
+        likeRetry = 0
         retryLikeInputs = productID
         networkServices.likeDislikeAPI(productID: productID)
             .receive(on: DispatchQueue.main)
@@ -233,6 +243,7 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     /// Adds product to shopping list
     func addToShopAPI(productID: String) {
         addToShopState = .loading
+        addToShopRetry = 0
         retryAddToShopInputs = productID
         networkServices.addToShoppingAPI(productID: productID)
             .receive(on: DispatchQueue.main)
@@ -503,6 +514,13 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     
     /// Retries product detail API call
     func retryProductDetailAPI() {
+        
+        guard productDetailRetry < maxRetryCount else {
+            productDetailState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        productDetailRetry += 1
+        
         guard let id = retryDetailInputs else { return }
         productDetailState = .idle
         productDetailAPI(id: id)
@@ -510,6 +528,13 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     
     /// Retries notification API call
     func retryNotifyAPI() {
+        
+        guard notifyRetry < maxRetryCount else {
+            notifyState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        notifyRetry += 1
+        
         guard let id = retryNotifyInputs else { return }
         notifyState = .idle
         notifyMeAPI(notifyStatus: id)
@@ -517,6 +542,13 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     
     /// Retries like/dislike API call
     func retryLikeAPI() {
+        
+        guard likeRetry < maxRetryCount else {
+            likeState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        likeRetry += 1
+        
         guard let productID = retryLikeInputs else { return }
         likeState = .idle
         likeDislikeAPI(productID: productID)
@@ -524,6 +556,13 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     
     /// Retries QR detail API call
     func retryQRDetailAPI() {
+        
+        guard QRDetailRetry < maxRetryCount else {
+            QRDetailState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        QRDetailRetry += 1
+        
         guard let id = retryDetailInputs else { return }
         QRDetailState = .idle
         productDetailAPIByQrCode(id: id)
@@ -531,6 +570,13 @@ final class ProductDetailViewModel: NSObject, ObservableObject {
     
     /// Retries add to shop API call
     func retryAddToShopAPI() {
+        
+        guard addToShopRetry < maxRetryCount else {
+            addToShopState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        addToShopRetry += 1
+        
         guard let productID = retryAddToShopInputs else { return }
         addToShopState = .idle
         addToShopAPI(productID: productID)

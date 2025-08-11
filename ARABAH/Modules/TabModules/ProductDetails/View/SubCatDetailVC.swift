@@ -366,8 +366,9 @@ class SubCatDetailVC: UIViewController, SocketDelegate, RangeSeekSliderDelegate,
         case .failure(let error):
            hideLoadingIndicator()
             self.handleAddToShopError(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
         
     }
@@ -387,8 +388,9 @@ class SubCatDetailVC: UIViewController, SocketDelegate, RangeSeekSliderDelegate,
         case .failure(let error):
             hideLoadingIndicator()
              self.handleLikeAPIError(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -408,8 +410,9 @@ class SubCatDetailVC: UIViewController, SocketDelegate, RangeSeekSliderDelegate,
         case .failure(let error):
             hideLoadingIndicator()
             self.handleNotifyMeError(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -428,8 +431,9 @@ class SubCatDetailVC: UIViewController, SocketDelegate, RangeSeekSliderDelegate,
         case .failure(let error):
             hideLoadingIndicator()
             self.handleQRDetailError(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -447,8 +451,9 @@ class SubCatDetailVC: UIViewController, SocketDelegate, RangeSeekSliderDelegate,
         case .failure(let error):
             self.hideLoadingIndicator()
             self.handleDetailAPIError(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             self.hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
 

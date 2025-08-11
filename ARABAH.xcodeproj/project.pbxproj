@@ -99,6 +99,8 @@
 		EBC291052DFC4E57007ADC58 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBC291042DFC4E57007ADC58 /* APIEndpoint.swift */; };
 		EBCD0D072E02E12600D2AAC6 /* LocationPermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBCD0D062E02E12600D2AAC6 /* LocationPermissionManager.swift */; };
 		EBCF3CC62DE442D300D03AB8 /* newLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = EBCF3CC52DE442D300D03AB8 /* newLogo.png */; };
+		EBD8192C2E373C2A001B5ABD /* SecureStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD8192B2E373C2A001B5ABD /* SecureStorage.swift */; };
+		EBD8192F2E375207001B5ABD /* NotificationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD8192E2E375207001B5ABD /* NotificationHelper.swift */; };
 		EBE5D2B02E058C2700328BD5 /* SettingsServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBE5D2AF2E058C2700328BD5 /* SettingsServices.swift */; };
 		EC1271802CCBC418003E8F6C /* ReviewVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC12717E2CCBC418003E8F6C /* ReviewVC.swift */; };
 		EC1271822CCBC451003E8F6C /* ReviewTVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC1271812CCBC451003E8F6C /* ReviewTVC.swift */; };
@@ -310,6 +312,8 @@
 		EBC291042DFC4E57007ADC58 /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
 		EBCD0D062E02E12600D2AAC6 /* LocationPermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPermissionManager.swift; sourceTree = "<group>"; };
 		EBCF3CC52DE442D300D03AB8 /* newLogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = newLogo.png; sourceTree = "<group>"; };
+		EBD8192B2E373C2A001B5ABD /* SecureStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStorage.swift; sourceTree = "<group>"; };
+		EBD8192E2E375207001B5ABD /* NotificationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationHelper.swift; sourceTree = "<group>"; };
 		EBE5D2AF2E058C2700328BD5 /* SettingsServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsServices.swift; sourceTree = "<group>"; };
 		EC12717E2CCBC418003E8F6C /* ReviewVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewVC.swift; sourceTree = "<group>"; };
 		EC1271812CCBC451003E8F6C /* ReviewTVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewTVC.swift; sourceTree = "<group>"; };
@@ -1462,6 +1466,7 @@
 				EBC291022DFC4DE9007ADC58 /* Helpers */,
 				EC851E652D06F871006FC97C /* Validation */,
 				EBC291032DFC4E19007ADC58 /* Constants */,
+				EBD8192D2E3751EB001B5ABD /* NotificationHelper */,
 				EBCD0D052E02E10300D2AAC6 /* PermissionManager */,
 			);
 			path = Core;
@@ -1495,6 +1500,7 @@
 				ECE7249B2CCF7E90008D5C86 /* CustomView.swift */,
 				ECA373442CC26D710090BFC5 /* OtpTextField.swift */,
 				ECE7249D2CCF7E90008D5C86 /* ImagePickerManager.swift */,
+				EBD8192B2E373C2A001B5ABD /* SecureStorage.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1512,7 +1518,6 @@
 		EBC291062DFC4E83007ADC58 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				EBBDF8DF2E02D915006BFA01 /* GoogleService-Info.plist */,
 				EBCF3CC52DE442D300D03AB8 /* newLogo.png */,
 				93A8B2372D5621D7004A059E /* Localizable.xcstrings */,
 				EC718F622CC23E190077B00E /* Assets.xcassets */,
@@ -1528,6 +1533,14 @@
 				EBCD0D062E02E12600D2AAC6 /* LocationPermissionManager.swift */,
 			);
 			path = PermissionManager;
+			sourceTree = "<group>";
+		};
+		EBD8192D2E3751EB001B5ABD /* NotificationHelper */ = {
+			isa = PBXGroup;
+			children = (
+				EBD8192E2E375207001B5ABD /* NotificationHelper.swift */,
+			);
+			path = NotificationHelper;
 			sourceTree = "<group>";
 		};
 		EC718F102CC234290077B00E = {
@@ -1584,6 +1597,7 @@
 			isa = PBXGroup;
 			children = (
 				EC718F632CC23E190077B00E /* Info.plist */,
+				EBBDF8DF2E02D915006BFA01 /* GoogleService-Info.plist */,
 				939E54B02D5B4E0400392BD1 /* ARABAH.entitlements */,
 				EB1C8D422E04353B0038AF25 /* App */,
 				EBC290FF2DFC4D8A007ADC58 /* Core */,
@@ -1998,6 +2012,7 @@
 				93A465B72D48C090005D2688 /* CreateNotesModal.swift in Sources */,
 				EB27EE752DEEB3550021CEFA /* DealsViewModel.swift in Sources */,
 				93BA3DA32D7FFAA900BDD724 /* FilterGetDataModal.swift in Sources */,
+				EBD8192C2E373C2A001B5ABD /* SecureStorage.swift in Sources */,
 				EC1271822CCBC451003E8F6C /* ReviewTVC.swift in Sources */,
 				93A8B22D2D55ECF2004A059E /* LocalizationClass.swift in Sources */,
 				EC4CFF472CC6872D000C38D2 /* TermsConditionVC.swift in Sources */,
@@ -2089,6 +2104,7 @@
 				93A8B2302D561F82004A059E /* BundleEx.m in Sources */,
 				EC540D742D0AFFA000126CFD /* ReportModal.swift in Sources */,
 				ECF717FE2CC7B82500358ECD /* CategoryVC.swift in Sources */,
+				EBD8192F2E375207001B5ABD /* NotificationHelper.swift in Sources */,
 				EC4CFF2F2CC639FF000C38D2 /* ProfileVC.swift in Sources */,
 				EC4CFF382CC66E34000C38D2 /* RaiseTicketVC.swift in Sources */,
 				ECF717F62CC7B18700358ECD /* FilterVC.swift in Sources */,

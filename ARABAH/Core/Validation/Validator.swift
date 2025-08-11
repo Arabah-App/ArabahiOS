@@ -47,7 +47,8 @@ struct Validator {
     }
     /// Validates OTP
     static func validateOTP(_ otp: String) -> ValidationResult {
-        guard otp.count < 4 else {
+        
+        guard otp.count == 4 else {
             return .failure(.invalidOTP)
         }
         return .success

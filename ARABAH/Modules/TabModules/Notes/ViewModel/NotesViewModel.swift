@@ -34,7 +34,12 @@ final class NotesViewModel {
     
     /// Service handling note-related network operations
     private let networkService: NotesServicesProtocol
-
+    private var notesListRetryCount = 0
+    private var notesDetailRetryCount = 0
+    private var notesDeleteRetryCount = 0
+    private var createNoteRetryCount = 0
+    private var getNotesRetryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Creates a new NotesViewModel
@@ -98,8 +103,19 @@ final class NotesViewModel {
     // MARK: - API Methods
     
     /// Fetches all notes from server
-    func getNotesAPI() {
+    func getNotesAPI(isRetry: Bool) {
+        if isRetry {
+            guard getNotesRetryCount < maxRetryCount else {
+                getNotesState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            getNotesRetryCount += 1
+        } else {
+            getNotesRetryCount = 0
+        }
+        
         getNotesState = .loading
+        
         networkService.getNotesAPI()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -119,8 +135,20 @@ final class NotesViewModel {
     }
 
     /// Fetches notes list (alternative endpoint)
-    func createNotesGetListAPI() {
+    func createNotesGetListAPI(isRetry: Bool) {
+        
+        if isRetry {
+            guard notesListRetryCount < maxRetryCount else {
+                notesListState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            notesListRetryCount += 1
+        } else {
+            notesListRetryCount = 0
+        }
+        
         notesListState = .loading
+        
         networkService.createNotesGetListAPI()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -138,7 +166,18 @@ final class NotesViewModel {
     }
 
     /// Fetches details for a specific note
-    func getNotesDetailAPI(id: String) {
+    func getNotesDetailAPI(id: String,isRetry: Bool) {
+        
+        if isRetry {
+            guard notesDetailRetryCount < maxRetryCount else {
+                notesDetailState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            notesDetailRetryCount += 1
+        } else {
+            notesDetailRetryCount = 0
+        }
+        
         notesDetailState = .loading
         
         networkService.getNotesDetailAPI(id: id)
@@ -167,7 +206,18 @@ final class NotesViewModel {
     }
 
     /// Deletes a specific note
-    func notesDeleteAPI(id: String) {
+    func notesDeleteAPI(id: String,isRetry: Bool) {
+
+        if isRetry {
+            guard notesDeleteRetryCount < maxRetryCount else {
+                notesDeleteState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            notesDeleteRetryCount += 1
+        } else {
+            notesDeleteRetryCount = 0
+        }
+        
         notesDeleteState = .loading
         
         networkService.notesDeleteAPI(id: id)
@@ -183,7 +233,18 @@ final class NotesViewModel {
     }
 
     /// Creates or updates a note
-    func createNotesAPI(id: String) {
+    func createNotesAPI(id: String,isRetry: Bool) {
+        
+        if isRetry {
+            guard createNoteRetryCount < maxRetryCount else {
+                createNoteState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            createNoteRetryCount += 1
+        } else {
+            createNoteRetryCount = 0
+        }
+        
         createNoteState = .loading
         
         // Filter out empty notes before saving

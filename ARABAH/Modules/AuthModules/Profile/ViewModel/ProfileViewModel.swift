@@ -43,7 +43,10 @@ final class ProfileViewModel {
     
     /// Temporary storage for notification status update.
     private var updateNotiParam: Int?
-    
+    private var deleteRetryCount = 0
+    private var logoutRetryCount = 0
+    private var notiStatusRetryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Initializes the ViewModel with the given auth service.
@@ -105,7 +108,7 @@ final class ProfileViewModel {
     /// - Parameter status: Integer representing notification on/off.
     private func updateNotificationStatus(status: Int) {
         updateNotiParam = status
-        
+        notiStatusRetryCount = 0
         authServices.updateNotificationStatus(status: status)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -122,6 +125,13 @@ final class ProfileViewModel {
     
     /// Retries the last failed notification status update.
     func retryUpdateNotiStatus() {
+        guard notiStatusRetryCount < maxRetryCount else {
+            updateNotiState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        notiStatusRetryCount += 1
+        
+        
         if let input = updateNotiParam {
             updateNotiState = .idle
             self.updateNotificationStatus(status: input)
@@ -130,6 +140,7 @@ final class ProfileViewModel {
     
     /// Deletes the user's account from the backend.
     private func deleteAccount() {
+        deleteRetryCount = 0
         authServices.deleteAccount()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -145,12 +156,19 @@ final class ProfileViewModel {
     
     /// Retries the last failed account deletion.
     func retryDeleteAccount() {
+        guard deleteRetryCount < maxRetryCount else {
+            deleteAccState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        deleteRetryCount += 1
+        
         deleteAccState = .idle
         self.deleteAccount()
     }
     
     /// Logs the user out by calling the logout API.
     private func logout() {
+        logoutRetryCount = 0
         authServices.logout()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -166,19 +184,27 @@ final class ProfileViewModel {
     
     /// Retries the logout API call.
     func retryLogout() {
+        guard logoutRetryCount < maxRetryCount else {
+            logoutState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        logoutRetryCount += 1
+        
         logoutState = .idle
         self.logout()
     }
     
     /// Clears all user-related data from the session (used after logout or account delete).
     private func clearUserSession() {
-        Store.remove = .userDetails
-        Store.remove = .authKey
+        Store.userDetails = nil
         Store.autoLogin = false
         Store.filterdata = nil
         Store.fitlerBrand = nil
         Store.filterStore = nil
         Store.authToken = nil
         Store.isfromsecure = ""
+        SecureStorage.deleteDeviceToken()
+        SecureStorage.deleteAuthToken()
     }
+    
 }

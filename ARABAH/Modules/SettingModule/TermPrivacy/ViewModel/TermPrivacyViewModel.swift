@@ -39,7 +39,8 @@ final class TermPrivacyViewModel {
     
     /// Stores the last attempted type so that retry can work with same parameters
     var retryParams: Int?
-    
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Initializes the ViewModel with a service instance (defaults to live implementation)
@@ -57,7 +58,7 @@ final class TermPrivacyViewModel {
     func fetchContent(with type: Int) {
         state = .loading                  // Notify UI to show loading state
         retryParams = type               // Save the param in case a retry is needed
-        
+        retryCount = 0
         // Call the API
         settingsService.fetchContent(with: type)
             .receive(on: DispatchQueue.main)
@@ -82,6 +83,13 @@ final class TermPrivacyViewModel {
      Retries the last failed API call using stored parameters.
      */
     func retryFetchContent() {
+        
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
         if let type = self.retryParams {
             state = .idle
             self.fetchContent(with: type)

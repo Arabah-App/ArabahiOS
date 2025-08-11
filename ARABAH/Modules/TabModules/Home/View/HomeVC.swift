@@ -165,9 +165,10 @@ class HomeVC: UIViewController {
             CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
                 self?.viewModel.retryHomeAPI()
             }
-        case .validationError(_):
+        case .validationError(let error):
             isLoading = false
             homeTbl.reloadData()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
 
@@ -334,9 +335,28 @@ extension HomeVC: GMSAutocompleteViewControllerDelegate {
 
 // MARK: - Location Manager Delegate
 extension HomeVC: CLLocationManagerDelegate {
+    
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        switch manager.authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
+            print("Authorized When In Use or Always")
+            manager.startUpdatingLocation()
+            manager.requestLocation()
+        case .denied, .restricted:
+            print("Permission Denied or Restricted")
+            LocationPermissionManager.shared.showLocationSettingsAlert(from: self)
+        case .notDetermined:
+            print("Permission Not Determined")
+            locationManager.requestWhenInUseAuthorization()
+        @unknown default:
+            break
+        }
+    }
+
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         // Got new location - update UI and stop to save battery
         guard let loc = locations.last else { return }
+        print("locationManager activated with---",loc)
         viewModel.updateLocation(loc.coordinate)
         manager.stopUpdatingLocation()
     }

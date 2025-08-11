@@ -25,6 +25,9 @@ final class RaiseTicketViewModel {
     /// Dependency to perform API requests (injected or default)
     private let settingsServices: SettingsServicesProtocol
     
+    private var retryCount = 0
+    private let maxRetryCount = 3
+    
     // MARK: - Initialization
     
     /// Initializes the ViewModel with an optional custom service implementation
@@ -38,7 +41,7 @@ final class RaiseTicketViewModel {
     func getTicketAPI() {
         // Move to loading state to trigger UI feedback
         state = .loading
-        
+        retryCount = 0
         // Request tickets via service
         settingsServices.getTicketAPI()
             .receive(on: DispatchQueue.main) // UI updates on main thread
@@ -63,6 +66,13 @@ final class RaiseTicketViewModel {
     
     /// Retries fetching tickets in case of failure
     func retryGetTicket() {
+        
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
         // Reset state to idle before retrying
         state = .idle
         self.getTicketAPI()

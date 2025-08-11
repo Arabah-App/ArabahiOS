@@ -442,9 +442,6 @@
                             <constraint firstAttribute="bottom" secondItem="KBG-OO-xjs" secondAttribute="bottom" id="ra3-1M-nfj"/>
                         </constraints>
                     </view>
-                    <connections>
-                        <outlet property="viewMain" destination="KBG-OO-xjs" id="usv-yJ-NVj"/>
-                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="eAZ-xG-Cw4" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -2244,7 +2241,6 @@
                                     </userDefinedRuntimeAttribute>
                                 </userDefinedRuntimeAttributes>
                                 <connections>
-                                    <action selector="btnApply:" destination="ndK-yU-I7f" eventType="touchUpInside" id="YfM-aC-7Cf"/>
                                     <action selector="btnSubmit:" destination="o6W-cu-aL6" eventType="touchUpInside" id="RO5-pH-6b6"/>
                                 </connections>
                             </button>
@@ -3090,7 +3086,7 @@
                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                         <state key="normal" image="Back"/>
                                         <connections>
-                                            <action selector="btnBack:" destination="UKg-uC-GNf" eventType="touchUpInside" id="jQ0-Y2-4Pn"/>
+                                            <action selector="didTapBack:" destination="UKg-uC-GNf" eventType="touchUpInside" id="9uJ-J4-NUh"/>
                                         </connections>
                                     </button>
                                 </subviews>
@@ -3276,7 +3272,7 @@
                                                             </userDefinedRuntimeAttribute>
                                                         </userDefinedRuntimeAttributes>
                                                         <connections>
-                                                            <action selector="btnResend:" destination="UKg-uC-GNf" eventType="touchUpInside" id="6Ck-Ph-nhF"/>
+                                                            <action selector="didTapResend:" destination="UKg-uC-GNf" eventType="touchUpInside" id="tJ9-ts-tDw"/>
                                                         </connections>
                                                     </button>
                                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Ln6-0X-UT6">
@@ -3304,7 +3300,7 @@
                                                     </userDefinedRuntimeAttribute>
                                                 </userDefinedRuntimeAttributes>
                                                 <connections>
-                                                    <action selector="btnVerify:" destination="UKg-uC-GNf" eventType="touchUpInside" id="c6n-tE-S6q"/>
+                                                    <action selector="didTapVerify:" destination="UKg-uC-GNf" eventType="touchUpInside" id="e7r-ZK-XxM"/>
                                                 </connections>
                                             </button>
                                         </subviews>
@@ -3793,7 +3789,6 @@
                                                 </userDefinedRuntimeAttributes>
                                                 <connections>
                                                     <action selector="BtnUpdate:" destination="mG4-bj-Igc" eventType="touchUpInside" id="FPm-lh-Z8Q"/>
-                                                    <action selector="btnVerify:" destination="UKg-uC-GNf" eventType="touchUpInside" id="VNI-hS-OkB"/>
                                                 </connections>
                                             </button>
                                         </subviews>
@@ -5838,7 +5833,6 @@
                                                     </userDefinedRuntimeAttribute>
                                                 </userDefinedRuntimeAttributes>
                                                 <connections>
-                                                    <action selector="BtnUpdate:" destination="BR4-UT-fmc" eventType="touchUpInside" id="Zfx-y5-eEO"/>
                                                     <action selector="btnSubmit:" destination="OA8-ky-cmn" eventType="touchUpInside" id="e2e-Bb-Dw7"/>
                                                 </connections>
                                             </button>

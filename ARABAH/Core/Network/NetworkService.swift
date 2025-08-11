@@ -253,7 +253,8 @@ final class NetworkService: NetworkServiceProtocol {
             Store.filterStore = nil
             Store.authToken = nil
             Store.isfromsecure = ""
-            
+            SecureStorage.deleteDeviceToken()
+            SecureStorage.deleteAuthToken()
             // Navigate to login
             let loginVC = UIStoryboard(name: "Main", bundle: nil)
                 .instantiateViewController(withIdentifier: "LoginVC") as! LoginVC

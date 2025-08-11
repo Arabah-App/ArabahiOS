@@ -21,6 +21,8 @@ final class LoginViewModel {
     private let authServices: AuthServicesProtocol                // API service for login
     private var previousInput: (countryCode: String, phoneNumber: String)?  // Store last login attempt for retry
 
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Initializes the ViewModel with an optional custom auth service
@@ -34,7 +36,7 @@ final class LoginViewModel {
     func login(countryCode: String, phoneNumber: String)  {
         // Save input for retry
         self.previousInput = (countryCode, phoneNumber)
-        
+        self.retryCount = 0
         // Validate input before proceeding
         guard validateInputs(countryCode: countryCode, phoneNumber: phoneNumber) else {
             return
@@ -62,6 +64,13 @@ final class LoginViewModel {
     
     /// Retry login using the previously stored input
     func retryLogin() {
+        
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
         if let input = previousInput {
             state = .idle
             login(countryCode: input.countryCode, phoneNumber: input.phoneNumber)

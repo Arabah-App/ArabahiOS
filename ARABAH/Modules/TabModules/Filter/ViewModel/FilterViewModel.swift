@@ -33,7 +33,8 @@ final class FilterViewModel {
     // Private properties
     private var cancellables = Set<AnyCancellable>()  // Combine subscriptions
     private let networkService: HomeServicesProtocol  // Network service
-    
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Creates a new FilterViewModel
@@ -46,7 +47,18 @@ final class FilterViewModel {
     
     /// Fetches filter data from the server
     /// - Parameter input: Contains location coordinates for filtering
-    func fetchFilterDataAPI(with input: Input) {
+    func fetchFilterDataAPI(with input: Input,isRetry: Bool = false) {
+        if isRetry {
+            guard retryCount < maxRetryCount else {
+                state = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            retryCount += 1
+        } else {
+            retryCount = 0
+        }
+        
+        
         state = .loading  // Set loading state
         
         networkService.fetchFilterDataAPI(longitude: input.longitude, latitude: input.latitude)

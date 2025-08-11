@@ -48,6 +48,8 @@ final class LoginVC: UIViewController {
         // Round the buttons
         signInButton.layer.cornerRadius = 8
         guestButton.layer.cornerRadius = 8
+        
+        SecureStorage.deleteAuthToken()
     }
     
     private func setupCountryPicker() {

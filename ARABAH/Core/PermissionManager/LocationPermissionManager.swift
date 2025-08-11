@@ -14,8 +14,8 @@ class LocationPermissionManager {
 
     // Check and handle location permissions
     func checkLocationAuthorization(from viewController: UIViewController, locationManager: CLLocationManager) {
-        let status = locationManager.authorizationStatus
-        switch status {
+        
+        switch locationManager.authorizationStatus {
         case .notDetermined:
             locationManager.requestWhenInUseAuthorization()
             print("notDetermined")
@@ -33,7 +33,7 @@ class LocationPermissionManager {
     }
 
     // Show alert if location access is denied
-    private func showLocationSettingsAlert(from viewController: UIViewController) {
+    func showLocationSettingsAlert(from viewController: UIViewController) {
         let alert = UIAlertController(
             title: RegexTitles.locationServicesRequired,
             message: RegexAlertMessages.requiredLocService,

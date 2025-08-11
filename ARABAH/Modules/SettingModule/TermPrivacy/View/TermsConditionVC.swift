@@ -114,8 +114,9 @@ class TermsConditionVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             showErrorAlert(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
  

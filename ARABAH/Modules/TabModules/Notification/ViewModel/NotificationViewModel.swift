@@ -33,7 +33,9 @@ final class NotificationViewModel {
     
     // Language flag for localization
     private let isArabic = Store.isArabicLang
-    
+    private var retryCount = 0
+    private var deleteRetryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Initializes the ViewModel with optional network service (defaults to HomeServices)
@@ -47,7 +49,7 @@ final class NotificationViewModel {
     func getNotificationList() {
         // Set loading state before making API call
         listState = .loading
-        
+        retryCount = 0
         networkService.getNotificationList()
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
@@ -79,6 +81,12 @@ final class NotificationViewModel {
     
     /// Retry mechanism for failed notification list fetch
     func retryGetNotification() {
+        guard retryCount < maxRetryCount else {
+            listState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
         listState = .idle
         self.getNotificationList()
     }
@@ -88,6 +96,7 @@ final class NotificationViewModel {
     /// Deletes all notifications via API
     func notificationDeleteAPI() {
         listDeleteState = .loading
+        deleteRetryCount = 0
         networkService.notificationDeleteAPI()
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
@@ -104,6 +113,12 @@ final class NotificationViewModel {
 
     /// Retry mechanism for failed deletion
     func retryDeleteNotification() {
+        
+        guard retryCount < maxRetryCount else {
+            listDeleteState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
         listDeleteState = .idle
         self.notificationDeleteAPI()
     }

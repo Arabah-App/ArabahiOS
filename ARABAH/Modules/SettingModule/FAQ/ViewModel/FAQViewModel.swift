@@ -25,6 +25,8 @@ final class FAQViewModel {
     /// Abstraction of the settings service layer (used for testability)
     private let settingsServices: SettingsServicesProtocol
     
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Initializes the ViewModel with optional custom service (default: real implementation)
@@ -39,7 +41,7 @@ final class FAQViewModel {
     func getFaqListAPI() {
         // Indicate loading started
         state = .loading
-        
+        retryCount = 0
         // Call the service to fetch FAQs
         settingsServices.getFaqListAPI()
             .receive(on: DispatchQueue.main) // Ensure updates occur on main thread
@@ -62,6 +64,12 @@ final class FAQViewModel {
     
     /// Retries fetching the FAQ list (used on failure alert retry)
     func retryGetFaqList() {
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
         // Reset to idle before retry
         state = .idle
         self.getFaqListAPI()

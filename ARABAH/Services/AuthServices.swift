@@ -55,22 +55,26 @@ final class AuthServices: AuthServicesProtocol {
 
     /// Logs in a user with phone number and country code.
     func loginUser(countryCode: String, phoneNumber: String) -> AnyPublisher<LoginModal, NetworkError> {
+        let deviceToken = SecureStorage.getDeviceToken() ?? "error in token"
         let parameters: RequestParameters = [
             "countryCode": countryCode,
             "phone": phoneNumber,
-            "deviceToken": Store.deviceToken ?? "",
+            "deviceToken": deviceToken,
             "deviceType": 1 // iOS
         ]
         return networkService.request(endpoint: .signup, method: .post, parameters: parameters, urlAppendData: nil, headers: nil)
     }
 
+
+    
     /// Verifies the OTP entered by the user.
     func verifyOTP(otp: String, phoneNumberWithCode: String) -> AnyPublisher<LoginModal, NetworkError> {
+        let deviceToken = SecureStorage.getDeviceToken() ?? "error in token"
         let parameters: [String: Any] = [
             "otp": otp,
             "phoneNnumberWithCode": phoneNumberWithCode,
             "deviceType": 1, // iOS
-            "deviceToken": Store.deviceToken ?? ""
+            "deviceToken": deviceToken
         ]
         return networkService.request(endpoint: .verifyOtp, method: .post, parameters: parameters, urlAppendData: nil, headers: nil)
     }

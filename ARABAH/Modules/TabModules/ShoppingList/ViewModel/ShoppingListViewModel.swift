@@ -27,7 +27,10 @@ final class ShoppingListViewModel {
     
     /// Temporary storage for ID of item being deleted
     private var deleteID: String?
-
+    private var getListRetryCount = 0
+    private var listDeleteRetryCount = 0
+    private var listClearRetryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Data Storage
     
     /// Local storage for shopping list items
@@ -55,7 +58,7 @@ final class ShoppingListViewModel {
     /// Fetches the shopping list from the API
     func shoppingListAPI() {
         getListState = .loading
-
+         getListRetryCount = 0
         networkService.shoppingListAPI()
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
@@ -77,6 +80,11 @@ final class ShoppingListViewModel {
     
     /// Retries the shopping list API call after a failure
     func retryShoppingListAPI() {
+        guard getListRetryCount < maxRetryCount else {
+            getListState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        getListRetryCount += 1
         self.shoppingListAPI()
     }
 
@@ -84,7 +92,7 @@ final class ShoppingListViewModel {
     /// - Parameter id: The ID of the item to delete
     func shoppingListDeleteAPI(id: String) {
         listDeleteState = .loading
-        
+        listDeleteRetryCount = 0
         self.deleteID = id
         networkService.shoppingListDeleteAPI(id: id)
         .receive(on: DispatchQueue.main)
@@ -100,6 +108,12 @@ final class ShoppingListViewModel {
 
     /// Retries the delete API call after a failure
     func retryListDeleteAPI() {
+        guard listDeleteRetryCount < maxRetryCount else {
+            listDeleteState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        listDeleteRetryCount += 1
+        
         guard let id = self.deleteID else { return }
         self.shoppingListDeleteAPI(id: id)
     }
@@ -107,7 +121,7 @@ final class ShoppingListViewModel {
     /// Clears all items from the shopping list via API
     func shoppingListClearAllAPI() {
         listClearState = .loading
-
+        listClearRetryCount = 0
         networkService.shoppingListClearAllAPI()
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
@@ -122,6 +136,14 @@ final class ShoppingListViewModel {
 
     /// Retries the clear all API call after a failure
     func retryShoppingListClearAllAPI() {
+        
+        guard listClearRetryCount < maxRetryCount else {
+            listClearState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        
+        listClearRetryCount += 1
+        
         self.shoppingListClearAllAPI()
     }
     

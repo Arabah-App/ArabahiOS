@@ -24,6 +24,8 @@ final class ContactUsViewModel {
     /// Stores previous input params for retry in case of failure
     var previousParams: (name: String, email: String, message: String)?
     
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Initializes the view model with a dependency-injected service
@@ -41,7 +43,7 @@ final class ContactUsViewModel {
     func contactUsAPI(name: String, email: String, message: String) {
         // Store input for potential retry
         self.previousParams = (name: name, email: email, message: message)
-        
+        self.retryCount = 0
         // Validate input before proceeding
         guard validateInputs(name: name, email: email, message: message) else {
             return
@@ -66,6 +68,13 @@ final class ContactUsViewModel {
     
     /// Retries the Contact Us API using previously entered parameters
     func retryContactUs() {
+        
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
         if let inputs = self.previousParams {
             state = .idle
             self.contactUsAPI(name: inputs.name, email: inputs.email, message: inputs.message)

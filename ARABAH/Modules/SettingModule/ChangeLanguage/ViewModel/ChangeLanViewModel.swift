@@ -16,7 +16,8 @@ class ChangeLanViewModel: NSObject {
     private var cancellables = Set<AnyCancellable>()        // Stores Combine subscriptions
     private let settingsServices: SettingsServicesProtocol  // Protocol for API service abstraction
      var retryParams: String?                        // Stores last language used for retry
-    
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Initializes the ViewModel with a service layer (dependency injection supported)
@@ -37,7 +38,7 @@ class ChangeLanViewModel: NSObject {
     func changeLanguageAPI(with languageType: String) {
         state = .loading
         self.retryParams = languageType
-        
+        self.retryCount = 0
         settingsServices.changeLanguageAPI(with: languageType)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -58,6 +59,12 @@ class ChangeLanViewModel: NSObject {
      Useful in case of a network failure or server error.
      */
     func retryChangeLanguageAPI() {
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
         if let languageType = self.retryParams {
             state = .idle
             self.changeLanguageAPI(with: languageType)

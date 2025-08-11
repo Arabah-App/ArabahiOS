@@ -15,6 +15,7 @@ final class SearchCatViewModel {
     // MARK: - Published Properties
     
     /// Holds the current state of the view model.
+    
     @Published private(set) var createSearchState: AppState<CreateModal> = .idle
     @Published private(set) var searchCatState: AppState<CategorySearchModal> = .idle
     @Published private(set) var recentSearchState: AppState<RecentSearchModal> = .idle
@@ -40,7 +41,11 @@ final class SearchCatViewModel {
     private var deleteHistoryID: String?
     private var cancellables = Set<AnyCancellable>()
     private let networkService: HomeServicesProtocol
-    
+    private var createSearchRetryCount = 0
+    private var recentSearchRetryCount = 0
+    private var historyDelRetryCount = 0
+    private var searchCatRetryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Initializes the ViewModel with an optional custom network service.
@@ -62,11 +67,23 @@ final class SearchCatViewModel {
     }
     
     /// Initiates the search by calling the create search API.
-    func performSearch() {
+    func performSearch(isRetry: Bool) {
         guard !searchQuery.isEmpty else {
             clearCategory()
             return
         }
+        
+        if isRetry {
+            guard createSearchRetryCount < maxRetryCount else {
+                createSearchState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            createSearchRetryCount += 1
+        } else {
+            createSearchRetryCount = 0
+        }
+        
+        
         createSearchState = .loading
         let name = searchQuery
         networkService.performSearch(name: name)
@@ -82,13 +99,24 @@ final class SearchCatViewModel {
                 }
                 self?.createSearchState = .success(response)
                 self?.createModalBody = contentBody
-                self?.fetchSearchResults()
+                self?.fetchSearchResults(isRetry: isRetry)
             }
             .store(in: &cancellables)
     }
 
     /// Fetches the search results (products and categories) based on the current query and location.
-    func fetchSearchResults() {
+    func fetchSearchResults(isRetry: Bool) {
+        
+        if isRetry {
+            guard searchCatRetryCount < maxRetryCount else {
+                searchCatState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            searchCatRetryCount += 1
+        } else {
+            searchCatRetryCount = 0
+        }
+        
         searchCatState = .loading
         
         networkService.fetchSearchResults(searchQuery: searchQuery, longitude: longitude, latitude: latitude)
@@ -110,7 +138,18 @@ final class SearchCatViewModel {
     }
     
     /// Calls the recent search API to get the list of recent search items.
-    func recentSearchAPI() {
+    func recentSearchAPI(isRetry: Bool) {
+        
+        if isRetry {
+            guard recentSearchRetryCount < maxRetryCount else {
+                recentSearchState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            recentSearchRetryCount += 1
+        } else {
+            recentSearchRetryCount = 0
+        }
+        
         recentSearchState = .loading
         networkService.recentSearchAPI()
             .receive(on: DispatchQueue.main)
@@ -131,6 +170,7 @@ final class SearchCatViewModel {
     
     /// Deletes a specific recent search history entry using its ID.
     func historyDeleteAPI(with id: String) {
+        historyDelRetryCount = 0
         historyDelState = .loading
         deleteHistoryID = id
         networkService.historyDeleteAPI(with: id)
@@ -147,6 +187,14 @@ final class SearchCatViewModel {
     
     /// Retries the delete API if it previously failed and a delete ID is available.
     func retryDeleteHistory() {
+        
+        
+        guard historyDelRetryCount < maxRetryCount else {
+            historyDelState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        historyDelRetryCount += 1
+    
         guard let id = self.deleteHistoryID else { return }
         self.historyDeleteAPI(with: id)
     }

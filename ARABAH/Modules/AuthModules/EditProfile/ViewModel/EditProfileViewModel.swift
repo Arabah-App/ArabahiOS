@@ -22,6 +22,10 @@ final class EditProfileViewModel {
     /// API service for authentication/profile-related requests.
     private let authServices: AuthServicesProtocol
     
+    private var retryCount = 0
+    private let maxRetryCount = 3
+    
+    
     /// Holds the most recent input so we can retry if needed.
      var recentInputs: (name: String, email: String, needImageUpdate: Bool, image: UIImage)?
     
@@ -48,7 +52,7 @@ final class EditProfileViewModel {
         guard validateInputs(name: name, email: email) else {
             return
         }
-        
+        self.retryCount = 0
         // Notify UI that loading has started
         state = .loading
         
@@ -70,6 +74,13 @@ final class EditProfileViewModel {
     
     /// Retries the last profile update request, using the last known input.
     func retryEditProfile() {
+        
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
         if let inputs = self.recentInputs {
             state = .idle
             self.completeProfleAPI(

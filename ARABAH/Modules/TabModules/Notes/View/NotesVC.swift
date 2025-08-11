@@ -33,7 +33,7 @@ class NotesVC: UIViewController {
         super.viewDidLoad()
         setupTableView()  // Configure table view
         bindViewModel()   // Set up ViewModel observers
-        viewModel.getNotesDetailAPI(id: notesId)  // Load existing note if editing
+        viewModel.getNotesDetailAPI(id: notesId, isRetry: false)  // Load existing note if editing
     }
 
     // MARK: - ACTIONS
@@ -41,7 +41,7 @@ class NotesVC: UIViewController {
     /// Handles done button tap - saves the note
     @IBAction func btnDone(_ sender: UIButton) {
         sender.accessibilityIdentifier = "btnDone"
-        viewModel.createNotesAPI(id: notesId)  // Save to server
+        viewModel.createNotesAPI(id: notesId, isRetry: false)  // Save to server
     }
 
     /// Handles back button tap - discards changes
@@ -215,10 +215,11 @@ extension NotesVC {
          case .failure(let error):
              hideLoadingIndicator()
              showRetryAlert(error: error) { [weak self] in
-                 self?.viewModel.createNotesAPI(id: self?.notesId ?? "")
+                 self?.viewModel.createNotesAPI(id: self?.notesId ?? "", isRetry: true)
              }
-         case .validationError(_):
+         case .validationError(let error):
              hideLoadingIndicator()
+             CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
          }
     }
     
@@ -237,10 +238,11 @@ extension NotesVC {
             hideLoadingIndicator()
             setNoDataMsg(count: 0)
             showRetryAlert(error: error) { [weak self] in
-                self?.viewModel.getNotesDetailAPI(id: self?.notesId ?? "")  // Retry loading
+                self?.viewModel.getNotesDetailAPI(id: self?.notesId ?? "", isRetry: true)  // Retry loading
             }
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
 

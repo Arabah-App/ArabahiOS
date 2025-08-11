@@ -92,8 +92,9 @@ class DealsOffVC: UIViewController {
             showNoData()
             showErrorAlert(error: error)
             tbl.reloadData()
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -101,7 +102,7 @@ class DealsOffVC: UIViewController {
     /// - Parameter error: Network error that occurred
     private func showErrorAlert(error: NetworkError) {
         CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
-            self?.getOfferDeals()
+            self?.viewModel.retryGetOfferDealsAPI()
         }
     }
     

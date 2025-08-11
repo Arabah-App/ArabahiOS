@@ -43,27 +43,16 @@ let PUBLISH_KEY = "911a408834cab595756ad4244ed51fc0e227a657d9b418326f192030a78ce
 // MARK: - UserDefaults Keys Enumeration
 /// Enum representing keys used for storing data in UserDefaults
 enum DefaultKeys: String {
-    case token
-    case authKey
+    
     case authToken
-    case loginvalue
-    case securitykey
-    case email
-    case password
-    case userDetails
     case autoLogin
-    case deviceToken
-    case voipDeviceToken
-    case loginDetls
-    case Save
-    case buisnessId
-    case receiverId
+    case loginvalue
+    case isArabicLang
     case filterdata
     case filterStore
     case fitlerBrand
-    case defaultcardid
-    case isArabicLang
-    case isWalkthroughDisabled
+    case userDetails
+    
 }
 
 
@@ -71,6 +60,7 @@ enum DefaultKeys: String {
 // MARK: - Validation Error Messages
 /// Validation error messages for form input fields and other checks
 enum RegexMessages {
+    
     static let invalidCountryCode = NSLocalizedString("Please select country code", comment: "")
     static let emptyPhoneNumber = NSLocalizedString("Enter your phone number", comment: "")
     static let emptyName = NSLocalizedString("Please enter name", comment: "")
@@ -100,10 +90,11 @@ enum RegexMessages {
     static let notificationOff = NSLocalizedString("Notification status Off successfully", comment: "")
     static let libraryAccessDenied = NSLocalizedString("Photo Library access is denied. Please enable it in settings.", comment: "")
     static let cameraAccessDenied = NSLocalizedString("Camera access is denied. Please enable it in settings.", comment: "")
-    
+    static let retryMaxCount = NSLocalizedString("Max retry attempts reached", comment: "")
 }
 
 enum RegexTitles {
+    
     static let settings = NSLocalizedString("Go To Settings", comment: "")
     static let permissionDenied = NSLocalizedString("Permission Denied", comment: "")
     static let retry = NSLocalizedString("Retry", comment: "")
@@ -117,9 +108,11 @@ enum RegexTitles {
     static let chooseOption = NSLocalizedString("Choose Option", comment: "")
     static let camera = NSLocalizedString("Camera", comment: "")
     static let gallery = NSLocalizedString("Gallery", comment: "")
+    
 }
 
 enum RegexAlertMessages {
+    
     static let cameraAllow = NSLocalizedString("Please allow camera access in Settings to scan QR codes.", comment: "")
     static let enableLocService = NSLocalizedString("Please enable location services in Settings.", comment: "")
     static let requiredLocService = NSLocalizedString("Location access is required. Please enable location permissions in Settings.", comment: "")
@@ -127,6 +120,7 @@ enum RegexAlertMessages {
 }
 
 enum APIErrorRegexMessages {
+    
     static let error = NSLocalizedString("Error", comment: "")
     static let noInternet = NSLocalizedString("No Internet", comment: "")
     static let accessDenied = NSLocalizedString("Access Denied", comment: "")
@@ -135,9 +129,11 @@ enum APIErrorRegexMessages {
     static let somethingWrong = NSLocalizedString("Something went wrong", comment: "")
     static let parseError = NSLocalizedString("Failed to parse server response", comment: "")
     static let unknownError = NSLocalizedString("An unknown error occurred", comment: "")
+    
 }
 
 enum PlaceHolderTitleRegex {
+    
     static let average = NSLocalizedString("Average", comment: "")
     static let sureRemoveProduct = NSLocalizedString("Are you sure you want to remove this product?", comment: "")
     static let removeProduct = NSLocalizedString("Remove Product", comment: "")

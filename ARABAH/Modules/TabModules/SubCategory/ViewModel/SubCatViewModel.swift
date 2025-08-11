@@ -14,6 +14,7 @@ final class SubCatViewModel {
     // MARK: - Properties
     
     /// Published property to observe state changes
+    
     @Published private(set) var subCatProductState: AppState<SubCatProductModal> = .idle
     @Published private(set) var getLatProductState: AppState<LatestProModal> = .idle
     @Published private(set) var getSimilarProductState: AppState<SimilarProductModal> = .idle
@@ -42,7 +43,12 @@ final class SubCatViewModel {
     
     /// ID of the current product/category being viewed
     var productID: String = ""
-
+    private var previousInput: String?
+    private var subCatProductRetryCount = 0
+    private var getLatProductRetryCount = 0
+    private var getSimilarProductRetryCount = 0
+    private var addToShopRetryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Initializes the ViewModel with a network service
@@ -73,17 +79,28 @@ final class SubCatViewModel {
     }
 
     /// Refreshes data based on the current check value
-    func refresh() {
+    func refresh(isRetry: Bool) {
         switch check {
-        case 1: subCatProduct(cateogyID: productID)
-        case 2: getSimilarProductAPI(id: productID)
-        default: getLatestProductAPI()
+        case 1: subCatProduct(cateogyID: productID, isRetry: isRetry)
+        case 2: getSimilarProductAPI(id: productID, isRetry: isRetry)
+        default: getLatestProductAPI(isRetry: isRetry)
         }
     }
 
     /// Fetches subcategory products for the given category ID
     /// - Parameter cateogyID: The ID of the category to fetch products for
-    func subCatProduct(cateogyID: String) {
+    func subCatProduct(cateogyID: String,isRetry: Bool) {
+        if isRetry {
+            guard subCatProductRetryCount < maxRetryCount else {
+                subCatProductState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            subCatProductRetryCount += 1
+        }else {
+            subCatProductRetryCount = 0
+        }
+        
+        
         subCatProductState = .loading
         
         networkService.subCatProduct(cateogyID: cateogyID)
@@ -113,7 +130,19 @@ final class SubCatViewModel {
     }
 
     /// Fetches the latest products
-    func getLatestProductAPI() {
+    func getLatestProductAPI(isRetry: Bool) {
+        
+        if isRetry {
+            guard getLatProductRetryCount < maxRetryCount else {
+                getLatProductState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            getLatProductRetryCount += 1
+        } else {
+            getLatProductRetryCount = 0
+        }
+        
+        
         getLatProductState = .loading
         networkService.getLatestProductAPI()
             .receive(on: DispatchQueue.main)
@@ -143,7 +172,18 @@ final class SubCatViewModel {
 
     /// Fetches similar products for the given product ID
     /// - Parameter id: The ID of the product to find similar items for
-    func getSimilarProductAPI(id: String) {
+    func getSimilarProductAPI(id: String,isRetry: Bool) {
+        
+        if isRetry {
+            guard getSimilarProductRetryCount < maxRetryCount else {
+                getSimilarProductState = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            getSimilarProductRetryCount += 1
+        } else {
+            getSimilarProductRetryCount = 0
+        }
+        
         getSimilarProductState = .loading
         
         networkService.getSimilarProductAPI(id: id)
@@ -201,7 +241,8 @@ final class SubCatViewModel {
     /// - Parameter productID: The ID of the product to add to cart
     private func addShoppingAPI(productID: String) {
         addToShopState = .loading
-        
+        addToShopRetryCount = 0
+        previousInput = productID
         networkService.addShoppingAPI(productID: productID)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -214,6 +255,21 @@ final class SubCatViewModel {
             }
             .store(in: &cancellables)
     }
+    
+    func retryAddToShop() {
+        
+        guard addToShopRetryCount < maxRetryCount else {
+            addToShopState = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        addToShopRetryCount += 1
+        
+        if let input = previousInput {
+            addToShopState = .idle
+            self.addShoppingAPI(productID: input)
+        }
+    }
+    
 }
 
 // MARK: - Double Extension

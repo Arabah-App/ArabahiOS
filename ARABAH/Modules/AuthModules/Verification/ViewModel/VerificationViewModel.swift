@@ -27,8 +27,10 @@ final class VerificationViewModel {
     var previousInput: (otp: String, phoneNnumberWithCode: String)?
     
     /// Stores last resend attempt phone number for retry
-     var previousResendInput: String?
-    
+    var previousResendInput: String?
+    private var resendRetryCount = 0
+    private var verifyRetryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Dependency Injection with default fallback
@@ -42,7 +44,7 @@ final class VerificationViewModel {
     func verifyOTP(otp: String, phoneNumberWithCode: String) {
         // Cache the input for potential retry
         self.previousInput = (otp, phoneNumberWithCode)
-        
+        self.verifyRetryCount = 0
         // Input validation
         guard validateInputs(otp: otp) else {
             state = .failure(.badRequest(message: RegexMessages.enterAllOTP))
@@ -70,6 +72,13 @@ final class VerificationViewModel {
     
     /// Retry last failed OTP verification attempt
     func retryVerifyOTP() {
+        
+        guard verifyRetryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        self.verifyRetryCount += 1
+        
         if let input = previousInput {
             state = .idle
             self.verifyOTP(otp: input.otp, phoneNumberWithCode: input.phoneNnumberWithCode)
@@ -80,7 +89,7 @@ final class VerificationViewModel {
     func resendOTP(phoneNumberWithCode: String) {
         state = .loading
         previousResendInput = phoneNumberWithCode
-        
+        self.resendRetryCount = 0
         // Call resend API
         authServices.resendOTP(phoneNumberWithCode: phoneNumberWithCode)
             .receive(on: DispatchQueue.main)
@@ -98,6 +107,12 @@ final class VerificationViewModel {
     
     /// Retry last failed resend attempt
     func retryResendOTP() {
+        guard resendRetryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        self.resendRetryCount += 1
+        
         if let input = previousResendInput {
             state = .idle
             self.resendOTP(phoneNumberWithCode: input)

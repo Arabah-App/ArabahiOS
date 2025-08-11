@@ -18,15 +18,7 @@ class AddTicketViewModel: NSObject {
         let title: String
         let description: String
     }
-    
-    /// Enum representing the various states the view model can be in.
-    enum State: Equatable {
-        case idle                           // Initial or reset state
-        case loading                        // API call in progress
-        case success                        // Ticket submission successful
-        case validateError(NetworkError)   // Input validation failed
-        case failure(NetworkError)         // API call failed
-    }
+
     
     // MARK: - Properties
 
@@ -41,7 +33,8 @@ class AddTicketViewModel: NSObject {
 
     /// Stores the last attempted input for retrying in case of failure.
     private var retryInputs: (title: String, description: String)?
-    
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
 
     /// Initializes the ViewModel with a default or injected service.
@@ -79,6 +72,7 @@ class AddTicketViewModel: NSObject {
     ///
     /// - Parameter input: Validated input data for ticket submission.
     func addTicketAPI(with input: Input) {
+        retryCount = 0
         state = .loading
 
         networkService.addTicketAPI(title: input.title, desc: input.description)
@@ -98,6 +92,13 @@ class AddTicketViewModel: NSObject {
     
     /// Retries the last failed ticket submission if input was previously saved.
     func retryLastSubmission() {
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
+        
         guard let retryInputs = self.retryInputs else { return }
         let input = Input(title: retryInputs.title, description: retryInputs.description)
         addTicketAPI(with: input)

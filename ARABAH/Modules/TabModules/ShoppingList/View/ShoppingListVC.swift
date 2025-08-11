@@ -100,8 +100,9 @@ class ShoppingListVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             showErrorAlertListClear(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -119,8 +120,9 @@ class ShoppingListVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             showErrorAlertDelete(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -138,8 +140,9 @@ class ShoppingListVC: UIViewController {
             hideLoadingIndicator()
             lblNodata.isHidden = false
             showErrorAlertList(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     

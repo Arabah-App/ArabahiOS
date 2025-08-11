@@ -13,30 +13,21 @@ import Foundation
 /// Values are serialized and deserialized securely where needed.
 class Store {
    
+    
     // MARK: - Auth Token
     
     /// The authentication token for the current user session.
     /// Stored as a String in UserDefaults.
     class var authToken: String? {
         set {
-            Store.saveValue(newValue, .authToken)
+            if let authToken = newValue, !authToken.isEmpty {
+                SecureStorage.saveAuthToken(authToken)
+            } else {
+                SecureStorage.saveAuthToken("")
+            }
         }
         get {
-            return Store.getValue(.authToken) as? String
-        }
-    }
-    
-    // MARK: - Receiver ID
-    
-    /// The receiver's user ID used in messaging or notifications.
-    /// Stored as an Int in UserDefaults.
-    /// Defaults to 0 if no value exists.
-    class var receiverId: Int? {
-        set {
-            Store.saveValue(newValue, .receiverId)
-        }
-        get {
-            return Store.getValue(.receiverId) as? Int ?? 0
+            return SecureStorage.getAuthToken()
         }
     }
     
@@ -62,19 +53,6 @@ class Store {
         }
         get {
             return Store.getValue(.isArabicLang) as? Bool ?? false
-        }
-    }
-    
-    // MARK: - Business ID
-    
-    /// The currently selected or logged-in business ID.
-    /// Stored as Int in UserDefaults.
-    class var buissnessID: Int? {
-        set {
-            Store.saveValue(newValue, .buisnessId)
-        }
-        get {
-            return Store.getValue(.buisnessId) as? Int
         }
     }
     
@@ -109,52 +87,7 @@ class Store {
             return Store.getValue(.fitlerBrand) as? [String]
         }
     }
-    
-    // MARK: - Security Key
-    
-    /// Security key string used for API or encryption purposes.
-    class var securitykey: String? {
-        set {
-            Store.saveValue(newValue, .securitykey)
-        }
-        get {
-            return Store.getValue(.securitykey) as? String
-        }
-    }
-    
-    // MARK: - Device Tokens
-    
-    /// Push notification device token.
-    class var deviceToken: String? {
-        set {
-            Store.saveValue(newValue, .deviceToken)
-        }
-        get {
-            return Store.getValue(.deviceToken) as? String
-        }
-    }
-    
-    /// VoIP push notification device token.
-    class var VoipdeviceToken: String? {
-        set {
-            Store.saveValue(newValue, .voipDeviceToken)
-        }
-        get {
-            return Store.getValue(.voipDeviceToken) as? String
-        }
-    }
-    
-    // MARK: - Default Card ID
-    
-    /// ID of the default payment card selected by the user.
-    class var defaultcardid: Int? {
-        set {
-            Store.saveValue(newValue, .defaultcardid)
-        }
-        get {
-            return Store.getValue(.defaultcardid) as? Int
-        }
-    }
+
     
     // MARK: - User Details
     
@@ -168,17 +101,6 @@ class Store {
         }
     }
     
-    // MARK: - User Login Details
-    
-    /// User login session details stored separately from general userDetails.
-    class var userLoginDetail: LoginModal? {
-        set {
-            Store.saveUserDetails(newValue, .loginDetls)
-        }
-        get {
-            return Store.getUserDetails(.loginDetls)
-        }
-    }
     
     // MARK: - Auto Login Flag
     
@@ -193,44 +115,9 @@ class Store {
         }
     }
     
-    // MARK: - Walkthrough Screen Status
     
-    /// Indicates if the walkthrough/tutorial has been disabled or completed.
-    /// Defaults to false.
-    class var isWalkthroughDisabled: Bool {
-        set {
-            Store.saveValue(newValue, .isWalkthroughDisabled)
-        }
-        get {
-            return Store.getValue(.isWalkthroughDisabled) as? Bool ?? false
-        }
-    }
-    
-    // MARK: - Remove Key
-    
-    /// Used to remove a stored key from UserDefaults.
-    /// When set, the specified key is deleted immediately.
-    static var remove: DefaultKeys! {
-        didSet {
-            Store.removeKey(remove)
-        }
-    }
     
     // MARK: - Private Helper Methods
-    
-    /// Removes the stored value for a given key from UserDefaults.
-    /// Also removes `authKey` when userDetails are removed.
-    /// - Parameter key: The DefaultKeys enum representing the key to remove.
-    private class func removeKey(_ key: DefaultKeys) {
-        UserDefaults.standard.removeObject(forKey: key.rawValue)
-        
-        // Also clear authKey if userDetails are removed
-        if key == .userDetails {
-            UserDefaults.standard.removeObject(forKey: DefaultKeys.authKey.rawValue)
-        }
-        
-        UserDefaults.standard.synchronize()
-    }
     
     /// Saves a value for the given key into UserDefaults.
     /// Values are archived securely to Data before storing.

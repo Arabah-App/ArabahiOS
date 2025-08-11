@@ -38,7 +38,9 @@ final class RatingListViewModel {
     
     /// Service handling product-related network requests
     private let networkService: ProductServicesProtocol
-    
+    private var previousInput: String?
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Creates a new RatingListViewModel
@@ -53,8 +55,9 @@ final class RatingListViewModel {
     /// - Parameter productId: The ID of the product to get ratings for
     func raitingListAPI(productId: String) {
         // Set loading state before making the request
+        previousInput = productId
         state = .loading
-        
+        retryCount = 0
         networkService.raitingListAPI(productId: productId)
         .receive(on: DispatchQueue.main)
         .sink { [weak self] completion in
@@ -94,5 +97,19 @@ final class RatingListViewModel {
             self.state = .success(response)
         }
         .store(in: &cancellables)
+    }
+    
+    func retryRatingListAPI() {
+        
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
+        if let input = previousInput {
+            state = .idle
+            self.raitingListAPI(productId: input)
+        }
     }
 }

@@ -60,7 +60,7 @@ class SubCategoryVC: UIViewController {
     /// Loads initial data and sets up the view
     private func loadInitialData() {
         headerLbll.text = viewModel.currentHeaderTitle
-        viewModel.refresh()
+        viewModel.refresh(isRetry: false)
     }
 }
 
@@ -174,7 +174,7 @@ extension SubCategoryVC {
     
     /// Handles refresh control action
     @objc private func refreshData() {
-        viewModel.refresh()
+        viewModel.refresh(isRetry: false)
     }
     
     /// Binds to ViewModel state changes
@@ -225,9 +225,12 @@ extension SubCategoryVC {
             hideLoadingIndicator()
         case .failure(let error):
             hideLoadingIndicator()
-            CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription, retryMove: nil)
-        case .validationError(_):
+            CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] (_) in
+                self?.viewModel.retryAddToShop()
+            }
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -249,10 +252,11 @@ extension SubCategoryVC {
             refreshControl.endRefreshing()
             setNoDataMsg()
             CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
-                self?.viewModel.refresh()
+                self?.viewModel.refresh(isRetry: true)
             }
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
         
     }
@@ -275,10 +279,11 @@ extension SubCategoryVC {
             refreshControl.endRefreshing()
             setNoDataMsg()
             CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
-                self?.viewModel.refresh()
+                self?.viewModel.refresh(isRetry: true)
             }
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -299,10 +304,11 @@ extension SubCategoryVC {
             refreshControl.endRefreshing()
             setNoDataMsg()
             CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
-                self?.viewModel.refresh()
+                self?.viewModel.refresh(isRetry: true)
             }
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
         
     }

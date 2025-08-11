@@ -31,7 +31,8 @@ final class HomeViewModel: NSObject, ObservableObject {
     private let homeServices: HomeServicesProtocol    // Handles API calls
     private var retryParams: (longitude: String, latitude: String, categoryID: String?, categoryName: String?)?  // Stores last request params for retries
     private let geocoder = CLGeocoder()  // Converts coordinates to addresses
-    
+    private var retryCount = 0
+    private var maxRetryCount = 3
     // Initialize with either a mock service (for testing) or real service
     init(homeServices: HomeServicesProtocol = HomeServices()) {
         self.homeServices = homeServices
@@ -49,6 +50,7 @@ final class HomeViewModel: NSObject, ObservableObject {
     func fetchHomeData(longitude: String, latitude: String, categoryID: String? = nil, categoryName: String? = nil) {
         // Update state and save params in case we need to retry
         state = .loading
+        retryCount = 0
         retryParams = (longitude: longitude, latitude: latitude, categoryID: categoryID, categoryName: categoryName)
         
         // Make the API call
@@ -82,6 +84,14 @@ final class HomeViewModel: NSObject, ObservableObject {
 
     /// Retries the last failed request using stored parameters
     func retryHomeAPI() {
+        
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
+        
         guard let params = retryParams else { return }
         fetchHomeData(
             longitude: params.longitude,

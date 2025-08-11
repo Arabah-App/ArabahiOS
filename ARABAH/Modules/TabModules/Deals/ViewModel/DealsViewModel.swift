@@ -24,7 +24,8 @@ final class DealsViewModel {
     
     /// Network service responsible for executing API calls.
     private let networkService: HomeServicesProtocol
-    
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Initializes the ViewModel with a network service.
@@ -40,7 +41,7 @@ final class DealsViewModel {
     /// and to success/failure based on the result.
     func getOfferDealsAPI() {
         state = .loading
-        
+        retryCount = 0
         networkService.getOfferDealsAPI()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -60,6 +61,18 @@ final class DealsViewModel {
             }
             .store(in: &cancellables)
     }
+    
+    func retryGetOfferDealsAPI() {
+        
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
+        self.getOfferDealsAPI()
+    }
+    
     
     /// Returns whether the deals data is empty.
     var isDataEmpty: Bool {

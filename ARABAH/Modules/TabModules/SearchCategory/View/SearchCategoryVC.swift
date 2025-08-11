@@ -61,7 +61,7 @@ class SearchCategoryVC: UIViewController, UITextFieldDelegate {
         setupListingViews()
         setUpView()
         viewModel.updateLocation(lat: latitude, long: longitude)
-        viewModel.recentSearchAPI()
+        viewModel.recentSearchAPI(isRetry: false)
     }
 
     // MARK: - UITextFieldDelegate
@@ -78,7 +78,7 @@ class SearchCategoryVC: UIViewController, UITextFieldDelegate {
         } else {
             // Perform search with entered text
             viewModel.updateSearchQuery(resultString)
-            viewModel.performSearch()
+            viewModel.performSearch(isRetry: false)
             self.searchCollectionCateogy.isHidden = false
         }
 
@@ -97,7 +97,7 @@ class SearchCategoryVC: UIViewController, UITextFieldDelegate {
             guard let self = self else { return }
             let name = txtFldSearch.text
             viewModel.updateSearchQuery(name ?? "")
-            viewModel.fetchSearchResults()
+            viewModel.fetchSearchResults(isRetry: false)
         }
         vc.modalPresentationStyle = .overCurrentContext
         self.navigationController?.present(vc, animated: false)
@@ -153,11 +153,12 @@ class SearchCategoryVC: UIViewController, UITextFieldDelegate {
             showLoadingIndicator()
         case .success(_):
             hideLoadingIndicator()
-            viewModel.recentSearchAPI()
+            viewModel.recentSearchAPI(isRetry: false)
         case .failure(let error):
             hideLoadingIndicator()
             showRetry(error: error,retry: viewModel.retryDeleteHistory )
-        case .validationError(_):
+        case .validationError(let error):
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
             hideLoadingIndicator()
         }
     }
@@ -177,8 +178,12 @@ class SearchCategoryVC: UIViewController, UITextFieldDelegate {
             hideLoadingIndicator()
             setNoData(count: 0)
             recentSearchTbl.reloadData()
-            showRetry(error: error, retry: viewModel.recentSearchAPI)
-        case .validationError(_):
+            showRetry(error: error) { [weak self] in
+                self?.viewModel.recentSearchAPI(isRetry: true)
+                
+            }
+        case .validationError(let error):
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
             hideLoadingIndicator()
         }
     }
@@ -197,8 +202,11 @@ class SearchCategoryVC: UIViewController, UITextFieldDelegate {
             updateSearchResultUI()
         case .failure(let error):
             hideLoadingIndicator()
-            showRetry(error: error, retry: viewModel.fetchSearchResults)
-        case .validationError(_):
+            showRetry(error: error) { [weak self] in
+                self?.viewModel.fetchSearchResults(isRetry: true)
+            }
+        case .validationError(let error):
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
             hideLoadingIndicator()
         }
     }
@@ -215,8 +223,11 @@ class SearchCategoryVC: UIViewController, UITextFieldDelegate {
             hideLoadingIndicator()
         case .failure(let error):
             hideLoadingIndicator()
-            showRetry(error: error,retry: viewModel.performSearch)
-        case .validationError(_):
+            showRetry(error: error) { [weak self] in
+                self?.viewModel.performSearch(isRetry: true)
+            }
+        case .validationError(let error):
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
             hideLoadingIndicator()
         }
     }
@@ -312,7 +323,7 @@ extension SearchCategoryVC: UITableViewDelegate, UITableViewDataSource {
         let name = viewModel.recentModel?[indexPath.row].name ?? ""
         txtFldSearch.text = name
         viewModel.updateSearchQuery(name)
-        viewModel.performSearch()
+        viewModel.performSearch(isRetry: false)
         viewRecentSearch.isHidden = true
         lblProdcut.isHidden = false
         lblCategory.isHidden = false

@@ -102,8 +102,6 @@ extension UICollectionView {
 extension UITableView {
     func setNoDataMessage(_ message: String,txtColor : UIColor = .black,yPosition : CGFloat = -50) {
         let view = UIView(frame: CGRect(x: 0, y: 0, width: self.bounds.width, height: self.bounds.height))
-     
-        
         let messageLabel = UILabel()
         messageLabel.accessibilityIdentifier = "noDataLabel"
         messageLabel.text = message
@@ -113,11 +111,9 @@ extension UITableView {
         messageLabel.font = UIFont.systemFont(ofSize: 20, weight: .medium)
         messageLabel.sizeToFit()
         view.addSubview(messageLabel)
-        
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
-           
             messageLabel.topAnchor.constraint(equalTo: view.centerYAnchor, constant: 10),
             messageLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             messageLabel.widthAnchor.constraint(equalToConstant: self.bounds.width - 60), // Adjust the width as needed

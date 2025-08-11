@@ -32,7 +32,7 @@ class FilterVC: UIViewController {
         super.viewDidLoad()
         bindViewModel()      // Setup ViewModel bindings
         setupView()         // Configure UI elements
-        fetchfilterListing() // Load initial filter data
+        fetchfilterListing(isRetry: false) // Load initial filter data
     }
     
     // MARK: - VIEWMODEL BINDING
@@ -73,8 +73,9 @@ class FilterVC: UIViewController {
             hideLoadingIndicator()
             setNoDataMsg(count: 0) // Show empty state
             showErrorAlert(error: error) // Display error
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -101,9 +102,9 @@ class FilterVC: UIViewController {
     
     // MARK: - DATA LOADING
     
-    private func fetchfilterListing() {
+    private func fetchfilterListing(isRetry: Bool) {
         let input = FilterViewModel.Input(longitude: longitude, latitude: latitude)
-        viewModel.fetchFilterDataAPI(with: input)
+        viewModel.fetchFilterDataAPI(with: input,isRetry: isRetry)
     }
     
     // MARK: - ALERT & LOADING
@@ -111,7 +112,7 @@ class FilterVC: UIViewController {
     private func showErrorAlert(error: NetworkError) {
         CommonUtilities.shared.showAlertWithRetry(title: appName,
                                                 message: error.localizedDescription) { [weak self] (_) in
-            self?.fetchfilterListing() // Retry on error
+            self?.fetchfilterListing(isRetry: true) // Retry on error
         }
     }
     

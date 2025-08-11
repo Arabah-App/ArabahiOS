@@ -26,7 +26,8 @@ final class AddRatingViewModel {
     
     // Stores the last submission attempt for retry functionality
     private var lastInputs: Inputs?
-    
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
     
     /// Creates a new AddRatingViewModel
@@ -56,6 +57,13 @@ final class AddRatingViewModel {
     
     /// Retries the last review submission attempt
     func retry() {
+        
+        guard retryCount < maxRetryCount else {
+            state = .validationError(.validationError(RegexMessages.retryMaxCount))
+            return
+        }
+        retryCount += 1
+        
         // Only retry if we have previous inputs
         guard let input = lastInputs else { return }
         createRatingAPI(productId: input.productId, rating: input.rating, review: input.review)
@@ -69,7 +77,7 @@ final class AddRatingViewModel {
         guard validateInput(description: review) else {
             return
         }
-        
+        self.retryCount = 0
         // Set loading state
         state = .loading
         

@@ -151,7 +151,9 @@ class VerificationVC: UIViewController {
     
     // MARK: - API Call Triggers
     private func verifyOTP() {
+        self.view.endEditing(true)
         let otp = txtFldCollection.map { $0.text ?? "" }.joined()
+        
         viewModel.verifyOTP(otp: otp, phoneNumberWithCode: phoneNumberWithCode)
     }
     
@@ -264,7 +266,6 @@ extension VerificationVC: UITextFieldDelegate, BackspaceTextFieldDelegate {
                 txtFldCollection[index + 1].becomeFirstResponder()
             } else {
                 textField.resignFirstResponder()
-                verifyOTP()
             }
             return false
         }

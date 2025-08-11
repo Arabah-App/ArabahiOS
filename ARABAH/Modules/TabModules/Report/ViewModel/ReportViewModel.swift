@@ -28,7 +28,8 @@ final class ReportViewModel {
 
     /// Network service responsible for performing API requests.
     private let networkService: ProductServicesProtocol
-
+    private var retryCount = 0
+    private let maxRetryCount = 3
     // MARK: - Initialization
 
     /// Initializes the ReportViewModel with a network service.
@@ -41,15 +42,25 @@ final class ReportViewModel {
 
     /// Calls the report API after validating the input.
     /// - Parameter input: The input containing `productID` and `message`.
-    func reportAPI(with input: Input) {
+    func reportAPI(with input: Input,isRetry: Bool) {
         // Trim unnecessary whitespace from the message.
         let trimmedMessage = input.message.trimmingCharacters(in: .whitespacesAndNewlines)
-
+        
         // Validate the cleaned message.
         guard validateInputs(description: trimmedMessage) else {
             return
         }
-
+        
+        if isRetry {
+            guard retryCount < maxRetryCount else {
+                state = .validationError(.validationError(RegexMessages.retryMaxCount))
+                return
+            }
+            retryCount += 1
+        } else {
+            retryCount = 0
+        }
+       
         // Set state to loading before making the network request.
         state = .loading
 

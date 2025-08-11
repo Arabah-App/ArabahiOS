@@ -87,10 +87,11 @@ class NotificationListVC: UIViewController {
             showErrorAlertListAPI(error: error)
             setNoDataMsg()
             notiListTbl.reloadData()
-        case .validationError(_):
+        case .validationError(let error):
             isLoading = false
             setNoDataMsg()
             notiListTbl.reloadData()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -109,8 +110,9 @@ class NotificationListVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             showErrorAlertDeleteAPI(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
             
         }
     }

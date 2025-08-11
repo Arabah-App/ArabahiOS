@@ -98,7 +98,8 @@ class CategoryVC: UIViewController {
             // Show error alert
             showErrorAlert(error: error)
             refreshControl.endRefreshing()
-        case .validationError(_):
+        case .validationError(let error):
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
             break
         }
     }

@@ -85,8 +85,9 @@ class RaiseTicketVC: UIViewController {
             hideLoadingIndicator()
             setNoData(count: 0)
             showErrorAlert(error: error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     

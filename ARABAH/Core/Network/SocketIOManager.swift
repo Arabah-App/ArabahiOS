@@ -57,31 +57,31 @@ class SocketIOManager: NSObject {
             NotificationCenter.default.post(name: .socketConnected, object: nil)
             self?.connectUser()
         }
-
+        
         socket.on(clientEvent: .reconnectAttempt) { [weak self] data, ack in
             guard let _ = self else { return }
             print("🔁 Reconnect Attempt")
             NotificationCenter.default.post(name: .socketReconnectAttempt, object: nil)
         }
-
+        
         socket.on(clientEvent: .reconnect) { [weak self] data, ack in
             guard let _ = self else { return }
             print("✅ Reconnected")
             NotificationCenter.default.post(name: .socketReconnected, object: nil)
         }
-
+        
         socket.on(clientEvent: .disconnect) { [weak self] data, ack in
             guard let _ = self else { return }
             print("❌ Disconnected")
             NotificationCenter.default.post(name: .socketDisconnected, object: nil)
         }
-
+        
         socket.on(clientEvent: .error) { [weak self] data, ack in
             guard let _ = self else { return }
             print("⚠️ Socket Error: \(data)")
             NotificationCenter.default.post(name: .socketError, object: data.first)
         }
-
+        
         addEventHandlers()
     }
     
@@ -106,7 +106,7 @@ class SocketIOManager: NSObject {
         manager.disconnect()
         print("🔌 Socket fully disconnected and handlers removed.")
     }
-
+    
     func isConnected() -> Bool {
         return socket.status == .connected
     }
@@ -122,7 +122,7 @@ extension SocketIOManager {
             print("⚠️ Invalid authToken or userId")
             return
         }
-
+        
         let dict: [String: Any] = [SocketKeys.userId.instance: userID]
         
         socket.emit(SocketEmitters.connectUser.instance, dict)

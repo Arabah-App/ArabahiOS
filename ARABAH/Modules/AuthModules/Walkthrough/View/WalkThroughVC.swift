@@ -71,6 +71,8 @@ class WalkThroughVC: UIViewController {
         WalkThroughCV.accessibilityIdentifier = "WalkThroughCV"
         pageController.accessibilityIdentifier = "pageControl"
 
+        SecureStorage.deleteAuthToken()
+
         // Configure the custom page control
         pageController.drawer.numberOfPages = imageArray.count
         pageController.drawer = ExtendedDotDrawer(

@@ -109,8 +109,9 @@ class FavProductVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             showDislikeErrorAlert(error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -125,8 +126,9 @@ class FavProductVC: UIViewController {
         case .failure(let error):
             hideLoadingIndicator()
             showFavListErrorAlert(error)
-        case .validationError(_):
+        case .validationError(let error):
             hideLoadingIndicator()
+            CommonUtilities.shared.showAlert(message: error.localizedDescription, isSuccess: .error)
         }
     }
     
@@ -142,7 +144,7 @@ class FavProductVC: UIViewController {
     /// Shows error alert for favorite list fetch failure with retry option
     private func showFavListErrorAlert(_ error: NetworkError) {
         CommonUtilities.shared.showAlertWithRetry(title: appName, message: error.localizedDescription) { [weak self] _ in
-            self?.viewModel.getProductfavList()
+            self?.viewModel.retryGetProductfavList()
         }
     }
     
